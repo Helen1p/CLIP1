@@ -1,0 +1,29 @@
+train:
+  epoch: 2
+  batch_size: 2
+  ckpt_save_path: /root/autodl-tmp/
+  ckpt: None
+  scaler: None
+
+optimizer:
+  name: Adam
+  lr: 5e-5
+  betas: (0.9,0.98)
+  eps: 1e-6
+  weight_decay: 0.2
+
+# lr_scheduler: 
+#   name: CosineAnnealingLR
+#   T_max: 15
+#   eta_min: 0.00001
+
+test:
+  batch_size: 2
+  ckpt: /root/autodl-tmp/checkpoint_epoch1.pth
+
+
+dataset:
+  train_input_filename: /root/CLIP1/data.csv
+  valid_input_filename: None
+  test_input_filename: /root/CLIP1/data_test.csv
+  n_px: 224
