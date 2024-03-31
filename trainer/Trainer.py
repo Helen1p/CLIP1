@@ -9,7 +9,7 @@ from utils.metrics import AverageMeter
 
 
 class trainer():
-    def __init__(self, model, epoch, optimizer, device, ckpt_save_path, train_loader, valid_loader=None, ckpt=None, lr_scheduler=None):
+    def __init__(self, model, epoch, optimizer, device, ckpt_save_path, log_dir, train_loader, valid_loader=None, ckpt=None, lr_scheduler=None):
         super().__init__()
         self.model=model
         self.optimizer=optimizer
@@ -25,7 +25,8 @@ class trainer():
         self.loss_text=nn.CrossEntropyLoss()
         if self.ckpt is not None:
             self.load_ckpt(self.ckpt)
-        self.writer = SummaryWriter(log_dir=r'/root/CLIP/logs')
+        # ？dir写错了
+        self.writer = SummaryWriter(log_dir=log_dir)
         self.train_loss = AverageMeter()
         self.val_metric1 = AverageMeter()
         

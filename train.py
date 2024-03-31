@@ -64,6 +64,7 @@ def main(args):
                             optimizer=optimizer, 
                             device=device, 
                             ckpt_save_path=config['train']['ckpt_save_path'], 
+                            log_dir=config['train']['log_dir'], 
                             train_loader=train_loader, 
                             valid_loader=None, 
                             ckpt=ckpt, 
@@ -88,7 +89,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type=str, default='/root/CLIP1/config/train.yaml',
                         help='Config path of models')
-    parser.add_argument('--mode', type=str, default='test',
+    parser.add_argument('--mode', type=str, default='train',
                         help='train or test')
     args=parser.parse_args()
 

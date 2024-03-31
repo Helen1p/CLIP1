@@ -1,9 +1,10 @@
 train:
   epoch: 2
-  batch_size: 2
+  batch_size: 128
   ckpt_save_path: /root/autodl-tmp/
   ckpt: None
   scaler: None
+  log_dir: /root/CLIP1/logs
 
 optimizer:
   name: Adam
@@ -19,12 +20,12 @@ optimizer:
 
 test:
   batch_size: 2
-  ckpt: /root/autodl-tmp/checkpoint_epoch1.pth
+  ckpt: /root/autodl-tmp/checkpoint_epoch0.pth
 
 
 dataset:
-  train_input_filename: /root/CLIP1/data.csv
-  train_root_path: xxxxx
+  train_input_filename: /root/CLIP1/json_data/q_pathway3.json
+  train_root_path: /root/autodl-tmp/q-instruct-images
   valid_input_filename: None
   test_input_filename: /root/CLIP1/data_test.csv
   n_px: 224

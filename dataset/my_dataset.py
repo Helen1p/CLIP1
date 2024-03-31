@@ -56,8 +56,9 @@ class image_title_dataset(Dataset):
         return len(self.list_caption)
     
     def __getitem__(self,idx):
+        # caption太长了，truncate = Ture
         images=self.preprocess(Image.open(os.path.join(self.root_path, self.list_image[idx])))
-        texts=clip.tokenize(self.list_caption[idx])[0] # [1, 77] -> [77]
+        texts=clip.tokenize(self.list_caption[idx], truncate=True)[0] # [1, 77] -> [77]
         return images, texts
 
 
