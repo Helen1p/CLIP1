@@ -9,3 +9,7 @@ linear prob &#x2716;
 fine tune &#x2714;
 
 todo:
+
+debug score_clipiqa
+
+check q align weights
