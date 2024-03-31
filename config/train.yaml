@@ -24,6 +24,7 @@ test:
 
 dataset:
   train_input_filename: /root/CLIP1/data.csv
+  train_root_path: xxxxx
   valid_input_filename: None
   test_input_filename: /root/CLIP1/data_test.csv
   n_px: 224

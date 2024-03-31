@@ -30,7 +30,7 @@ def main(args):
 
     if args.mode == 'train':
         # fine tune / train from scratch
-        train_dataset=image_title_dataset(config['dataset']['train_input_filename'], config['dataset']['n_px'])
+        train_dataset=image_title_dataset(config['dataset']['train_input_filename'], config['dataset']['n_px'], config['dataset']['train_root_path'])
         # train_dataset=image_title_dataset('/root/CLIP/data.csv', 224)
 
         # valid_dataset=image_title_dataset(config['dataset']['valid_input_filename'], config['dataset']['n_px'])

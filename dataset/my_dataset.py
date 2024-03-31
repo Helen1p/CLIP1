@@ -3,6 +3,9 @@ import clip
 from PIL import Image
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 import pandas as pd
+import json
+import os
+
 
 try:
     from torchvision.transforms import InterpolationMode
@@ -23,22 +26,43 @@ def transform(n_px):
         Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711)),
     ])
 # train
+# csv 版本
+# class image_title_dataset(Dataset):
+#     def __init__(self, input_filename, n_px):
+#         df = pd.read_csv(input_filename)
+#         self.list_image = df["image"].tolist()
+#         self.list_caption = df["caption"].tolist()
+#         self.preprocess=transform(n_px)
+    
+#     def __len__(self):
+#         return len(self.list_caption)
+    
+#     def __getitem__(self,idx):
+#         images=self.preprocess(Image.open(self.list_image[idx]))
+#         texts=clip.tokenize(self.list_caption[idx])[0] # [1, 77] -> [77]
+#         return images, texts
+    
+
 class image_title_dataset(Dataset):
-    def __init__(self, input_filename, n_px):
-        df = pd.read_csv(input_filename)
-        self.list_image = df["image"].tolist()
-        self.list_caption = df["caption"].tolist()
+    def __init__(self, input_filename, n_px, root_path):
+        with open(input_filename, 'r') as f:
+            self.data=json.load(f)
+        self.list_image = [x['image'] for x in self.data]
+        self.list_caption = [x['value'] for x in self.data]
         self.preprocess=transform(n_px)
+        self.root_path=root_path
     
     def __len__(self):
         return len(self.list_caption)
     
     def __getitem__(self,idx):
-        images=self.preprocess(Image.open(self.list_image[idx]))
+        images=self.preprocess(Image.open(os.path.join(self.root_path, self.list_image[idx])))
         texts=clip.tokenize(self.list_caption[idx])[0] # [1, 77] -> [77]
         return images, texts
 
+
 # test: image + target(MOS)
+# csv 版本
 class test_MOS_dataset(Dataset):
     def __init__(self, input_filename, n_px):
         df = pd.read_csv(input_filename)
