@@ -148,6 +148,7 @@ class trainer():
                 
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
+                    
                 self.train_loss.update(total_loss.item(), n)
                 pbar.set_postfix({'Epoch': epoch,
                                 'loss': self.train_loss.avg})

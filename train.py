@@ -9,7 +9,8 @@ from clip.model import build_model
 from trainer import Trainer
 import yaml
 import sys
-from testing.classifer import zero_shot_eval
+from testing.score_clipiqa import zero_shot_eval_clipiqa
+from testing.score_qalign import zero_shot_eval_qalign
 from utils.metrics import srocc, plcc
 
 # fix random seeds for reproducibility
@@ -79,10 +80,18 @@ def main(args):
         ckpt_path = config['test']['ckpt']
         checkpoint=torch.load(ckpt_path, map_location=device)
         # model, _ = clip.load("ViT-B/32", device=device, jit=False) # must set jit=False for training
-        model=build_model(checkpoint['state_dict']).to(device)
-        pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
-        srocc_, plcc_ = srocc(pred_list, target_list), plcc(pred_list, target_list)
+        # q bench, clip iqa
+        model=build_model(checkpoint['state_dict'], PE=False).to(device)
+        pred_list, target_list = zero_shot_eval_clipiqa(model=model, data_loader=test_loader, device=device)
+        pred_list1 = pred_list[:,0]
+        srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list, target_list)
         print('srocc: ', srocc_, ' plcc: ', plcc_)
+
+        # q align
+        # model=build_model(checkpoint['state_dict'], PE=True).to(device)
+        # pred_list, target_list = zero_shot_eval_qalign(model=model, data_loader=test_loader, device=device)
+        # srocc_, plcc_ = srocc(pred_list, target_list), plcc(pred_list, target_list)
+        # print('srocc: ', srocc_, ' plcc: ', plcc_)
 
 
 if __name__=='__main__':

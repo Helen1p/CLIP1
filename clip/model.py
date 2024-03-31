@@ -241,7 +241,7 @@ class VisionTransformer(nn.Module):
         return x
 
 
-class CLIP(nn.Module):
+class CustomCLIP(nn.Module):
     def __init__(self,
                  embed_dim: int,
                  # vision
@@ -254,11 +254,13 @@ class CLIP(nn.Module):
                  vocab_size: int,
                  transformer_width: int,
                  transformer_heads: int,
-                 transformer_layers: int
+                 transformer_layers: int,
+                 PE: bool
                  ):
         super().__init__()
 
         self.context_length = context_length
+        self.PE=PE
 
         if isinstance(vision_layers, (tuple, list)):
             vision_heads = vision_width * 32 // 64
@@ -344,8 +346,8 @@ class CLIP(nn.Module):
     def encode_text(self, text):
         # input text: [bs, 77]
         x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
-
-        x = x + self.positional_embedding.type(self.dtype)
+        if self.PE:
+            x = x + self.positional_embedding.type(self.dtype)
         # x [bs, 77, 512]
         x = x.permute(1, 0, 2)  # NLD -> LND
         x = self.transformer(x)
@@ -400,7 +402,7 @@ def convert_weights(model: nn.Module):
     model.apply(_convert_weights_to_fp16)
 
 
-def build_model(state_dict: dict):
+def build_model(state_dict: dict, PE=True):
     vit = "visual.proj" in state_dict
 
     if vit:
@@ -425,10 +427,11 @@ def build_model(state_dict: dict):
     transformer_heads = transformer_width // 64
     transformer_layers = len(set(k.split(".")[2] for k in state_dict if k.startswith("transformer.resblocks")))
 
-    model = CLIP(
+    model = CustomCLIP(
         embed_dim,
         image_resolution, vision_layers, vision_width, vision_patch_size,
-        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers
+        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers,
+        PE=PE
     )
 
     for key in ["input_resolution", "context_length", "vocab_size"]:
