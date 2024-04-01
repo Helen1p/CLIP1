@@ -31,7 +31,7 @@ def main(args):
 
     if args.mode == 'train':
         # fine tune / train from scratch
-        train_dataset=image_title_dataset(config['dataset']['train_input_filename'], config['dataset']['n_px'], config['dataset']['train_root_path'])
+        train_dataset=image_title_dataset(config['dataset']['train_json_path'], config['dataset']['train_image_path'], config['dataset']['n_px'])
         # train_dataset=image_title_dataset('/root/CLIP/data.csv', 224)
 
         # valid_dataset=image_title_dataset(config['dataset']['valid_input_filename'], config['dataset']['n_px'])
@@ -74,17 +74,19 @@ def main(args):
     
     if args.mode == 'test':
         # zero shot MOS / zero shot attributes classifer
-        test_dataset=test_MOS_dataset(config['dataset']['test_input_filename'], config['dataset']['n_px'])
+        test_dataset=test_MOS_dataset(config['dataset']['test_json_path'], config['dataset']['test_image_path'], config['dataset']['n_px'])
+        # len(test_dataset)=2985, len(test_loader)=12
         test_loader=DataLoader(test_dataset, config['test']['batch_size'], num_workers=1)
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
-        ckpt_path = config['test']['ckpt']
-        checkpoint=torch.load(ckpt_path, map_location=device)
-        # model, _ = clip.load("ViT-B/32", device=device, jit=False) # must set jit=False for training
+        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+
+        # ckpt_path = config['test']['ckpt']
+        # checkpoint=torch.load(ckpt_path, map_location=device)
         # q bench, clip iqa
-        model=build_model(checkpoint['state_dict'], PE=False).to(device)
+        # model=build_model(checkpoint['state_dict'], PE=False).to(device)
         pred_list, target_list = zero_shot_eval_clipiqa(model=model, data_loader=test_loader, device=device)
-        pred_list1 = pred_list[:,0]
-        srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list, target_list)
+        pred_list1 = pred_list[0]
+        srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list1, target_list)
         print('srocc: ', srocc_, ' plcc: ', plcc_)
 
         # q align
@@ -98,7 +100,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type=str, default='/root/CLIP1/config/train.yaml',
                         help='Config path of models')
-    parser.add_argument('--mode', type=str, default='train',
+    parser.add_argument('--mode', type=str, default='test',
                         help='train or test')
     args=parser.parse_args()
 

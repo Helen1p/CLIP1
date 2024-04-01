@@ -19,13 +19,23 @@ optimizer:
 #   eta_min: 0.00001
 
 test:
-  batch_size: 2
+  batch_size: 256
   ckpt: /root/autodl-tmp/checkpoint/checkpoint_epoch0.pth
 
 
 dataset:
-  train_input_filename: /root/CLIP1/json_data/q_pathway3.json
-  train_root_path: /root/autodl-tmp/q-instruct-images
+  train_json_path: /root/CLIP1/json_data/q_pathway3.json
+  train_image_path: /root/autodl-tmp/q-instruct-images
   valid_input_filename: None
-  test_input_filename: /root/CLIP1/data_test.csv
+  test_json_path: /root/autodl-tmp/test/json/koniq.json
+  test_image_path: /root/autodl-tmp/test/koniq10k
   n_px: 224
+
+
+# test_json_path: [/root/autodl-tmp/test/json/kadid.json, /root/autodl-tmp/test/json/agi.json, 
+# /root/autodl-tmp/test/json/cgi.json, /root/autodl-tmp/test/json/flive.json,
+# /root/autodl-tmp/test/json/koniq.json, /root/autodl-tmp/test/json/livec.json,
+# /root/autodl-tmp/test/json/spaq.json]
+
+# test_image_path: [/root/autodl-tmp/test/kadid10k/images, /root/autodl-tmp/test/AGIQA-3K,
+# /root/autodl-tmp/test/koniq10k]

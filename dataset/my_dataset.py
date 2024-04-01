@@ -44,13 +44,13 @@ def transform(n_px):
     
 
 class image_title_dataset(Dataset):
-    def __init__(self, input_filename, n_px, root_path):
-        with open(input_filename, 'r') as f:
+    def __init__(self, train_json_path, train_image_path, n_px):
+        with open(train_json_path, 'r') as f:
             self.data=json.load(f)
         self.list_image = [x['image'] for x in self.data]
         self.list_caption = [x['value'] for x in self.data]
         self.preprocess=transform(n_px)
-        self.root_path=root_path
+        self.root_path=train_image_path
     
     def __len__(self):
         return len(self.list_caption)
@@ -64,21 +64,39 @@ class image_title_dataset(Dataset):
 
 # test: image + target(MOS)
 # csv 版本
+# class test_MOS_dataset(Dataset):
+#     def __init__(self, input_filename, n_px):
+#         df = pd.read_csv(input_filename)
+#         self.list_image = df["image"].tolist()
+#         self.list_MOS = df["MOS"].tolist()
+#         self.preprocess=transform(n_px)
+    
+#     def __len__(self):
+#         return len(self.list_MOS)
+    
+#     def __getitem__(self,idx):
+#         images=self.preprocess(Image.open(self.list_image[idx]))
+#         MOS=self.list_MOS[idx] 
+#         return images, MOS
+    
+
 class test_MOS_dataset(Dataset):
-    def __init__(self, input_filename, n_px):
-        df = pd.read_csv(input_filename)
-        self.list_image = df["image"].tolist()
-        self.list_MOS = df["MOS"].tolist()
+    def __init__(self, test_json_path, test_image_path, n_px):
+        with open(test_json_path, 'r') as f:
+            self.data=json.load(f)
+        self.list_image = [x['img_path'] for x in self.data]
+        self.list_MOS = [x['gt_score'] for x in self.data]
         self.preprocess=transform(n_px)
+        self.test_image_path=test_image_path
     
     def __len__(self):
         return len(self.list_MOS)
     
     def __getitem__(self,idx):
-        images=self.preprocess(Image.open(self.list_image[idx]))
-        MOSs=self.list_MOS[idx] 
-        return images, MOSs
-    
+        images=self.preprocess(Image.open(os.path.join(self.test_image_path, self.list_image[idx])))
+        MOS=self.list_MOS[idx] 
+        return images, MOS
+
 
 # another test: image + low-level attribute groundtruth
 

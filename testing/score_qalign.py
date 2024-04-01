@@ -15,6 +15,11 @@ CLASSNAMES=[
     ['Good photo.', 'Bad photo.'],
 ]
 
+"""
+weights: 
+ours: 1,2,3,4,5
+q align: [1,0.75,0.5,0.25,0.]->[5, 3.75, 2.5, 1.25, 0.0]
+"""
 
 def zero_shot_eval_qalign(model, data_loader, device):
 
