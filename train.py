@@ -9,8 +9,7 @@ from clip.model import build_model
 from trainer import Trainer
 import yaml
 import sys
-from testing.score_clipiqa import zero_shot_eval_clipiqa
-from testing.score_qalign import zero_shot_eval_qalign
+from testing.score_clipiqa import zero_shot_eval
 from utils.metrics import srocc, plcc
 
 # fix random seeds for reproducibility
@@ -78,22 +77,20 @@ def main(args):
         # len(test_dataset)=2985, len(test_loader)=12
         test_loader=DataLoader(test_dataset, config['test']['batch_size'], num_workers=1)
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
-        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
 
+        # 1.test on OG clip
+        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+        # model, _ = clip.load("ViT-B/32", device=device, jit=False) # must set jit=False for training
+
+        # 2.test on our checkpoint
         # ckpt_path = config['test']['ckpt']
         # checkpoint=torch.load(ckpt_path, map_location=device)
-        # q bench, clip iqa
-        # model=build_model(checkpoint['state_dict'], PE=False).to(device)
-        pred_list, target_list = zero_shot_eval_clipiqa(model=model, data_loader=test_loader, device=device)
+        # model=build_model(checkpoint['state_dict'], PE=True).to(device)
+        # q bench/clip iqa, q align
+        pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
         pred_list1 = pred_list[0]
         srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list1, target_list)
         print('srocc: ', srocc_, ' plcc: ', plcc_)
-
-        # q align
-        # model=build_model(checkpoint['state_dict'], PE=True).to(device)
-        # pred_list, target_list = zero_shot_eval_qalign(model=model, data_loader=test_loader, device=device)
-        # srocc_, plcc_ = srocc(pred_list, target_list), plcc(pred_list, target_list)
-        # print('srocc: ', srocc_, ' plcc: ', plcc_)
 
 
 if __name__=='__main__':
