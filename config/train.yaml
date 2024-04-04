@@ -1,6 +1,6 @@
 train:
   epoch: 20
-  batch_size: 128
+  batch_size: 64
   ckpt_save_path: /root/autodl-tmp/checkpoint/
   ckpt: None
   scaler: None
@@ -8,7 +8,7 @@ train:
 
 optimizer:
   name: Adam
-  lr: 5e-5
+  lr: 1e-4
   betas: (0.9,0.98)
   eps: 1e-6
   weight_decay: 0.2
@@ -20,15 +20,15 @@ optimizer:
 
 test:
   batch_size: 256
-  ckpt: /root/autodl-tmp/checkpoint/checkpoint_epoch19.pth
+  ckpt: /root/autodl-tmp/checkpoint/checkpoint_epoch99.pth
 
 
 dataset:
   train_json_path: /root/CLIP1/json_data/q_pathway3.json
   train_image_path: /root/autodl-tmp/q-instruct-images
   valid_input_filename: None
-  test_json_path: /root/autodl-tmp/test/json/livec.json
-  test_image_path: /root/autodl-tmp/test/livec
+  test_json_path: /root/autodl-tmp/test/json/flive.json
+  test_image_path: /root/autodl-tmp/test/flive
   n_px: 224
 
 
@@ -36,9 +36,9 @@ dataset:
 # [/root/autodl-tmp/test/json/kadid.json, /root/autodl-tmp/test/kadid10k]
 # [/root/autodl-tmp/test/json/agi.json, /root/autodl-tmp/test/AGIQA-3K]
 # [/root/autodl-tmp/test/json/cgi.json, /root/autodl-tmp/test/CGIQA-6K]
-# [/root/autodl-tmp/test/json/flive.json, ]
+# [/root/autodl-tmp/test/json/flive.json, /root/autodl-tmp/test/flive]
 # [/root/autodl-tmp/test/json/koniq.json, /root/autodl-tmp/test/koniq10k]
 # [/root/autodl-tmp/test/json/livec.json, /root/autodl-tmp/test/livec]
-# [/root/autodl-tmp/test/json/spaq.json, ]
+# [/root/autodl-tmp/test/json/spaq.json, /root/autodl-tmp/test/SPAQ/TestImage]
 
 

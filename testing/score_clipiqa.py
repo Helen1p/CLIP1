@@ -83,8 +83,8 @@ def zero_shot_eval(model, data_loader, device):
 
                 logits = logits_per_image.softmax(dim=-1) # [bs, class_num]
                 # score_rank=torch.Tensor([1, 0]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
-                score_rank=torch.Tensor([1, 0.75, 0.5, 0.25, 0.]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
-                # score_rank=torch.Tensor([1, 0.8, 0.6, 0.4, 0.1]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
+                # score_rank=torch.Tensor([1, 0.75, 0.5, 0.25, 0.]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
+                score_rank=torch.Tensor([1, 0.8, 0.6, 0.4, 0.1]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
                 pred = logits @ score_rank # [bs, 1]
                 # logits_list.append(logits[:, 0].unsqueeze(1)) # [bs, 1]
                 logits_list.append(pred)
