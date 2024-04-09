@@ -48,17 +48,20 @@ class image_title_dataset(Dataset):
         with open(train_json_path, 'r') as f:
             self.data=json.load(f)
         self.list_image = [x['image'] for x in self.data]
-        self.list_caption = [x['value'] for x in self.data]
+        # 3个
+        self.list_caption_local = [x['local'] for x in self.data]
+        # 1个 / 3个
+        self.list_caption_global = [x['global'] for x in self.data]
         self.preprocess=transform(n_px)
         self.root_path=train_image_path
     
     def __len__(self):
-        return len(self.list_caption)
+        return len(self.list_image)
     
     def __getitem__(self,idx):
         # caption太长了，truncate = Ture
         images=self.preprocess(Image.open(os.path.join(self.root_path, self.list_image[idx])))
-        texts=clip.tokenize(self.list_caption[idx], truncate=True)[0] # [1, 77] -> [77]
+        texts=clip.tokenize(self.list_caption_local[idx][0], truncate=True)[0] # [1, 77] -> [77]
         return images, texts
 
 

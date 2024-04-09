@@ -1,6 +1,6 @@
 train:
   epoch: 20
-  batch_size: 64
+  batch_size: 32
   ckpt_save_path: /root/autodl-tmp/checkpoint/
   ckpt: None
   scaler: None
@@ -8,7 +8,7 @@ train:
 
 optimizer:
   name: Adam
-  lr: 1e-4
+  lr: 5e-5
   betas: (0.9,0.98)
   eps: 1e-6
   weight_decay: 0.2
@@ -20,15 +20,15 @@ optimizer:
 
 test:
   batch_size: 256
-  ckpt: /root/autodl-tmp/checkpoint/checkpoint_epoch99.pth
+  ckpt: /root/autodl-tmp/checkpoint/checkpoint_epoch16.pth
 
 
 dataset:
-  train_json_path: /root/CLIP1/json_data/q_pathway3.json
+  train_json_path: /root/CLIP1/json_data/new.json
   train_image_path: /root/autodl-tmp/q-instruct-images
   valid_input_filename: None
-  test_json_path: /root/autodl-tmp/test/json/flive.json
-  test_image_path: /root/autodl-tmp/test/flive
+  test_json_path: /root/autodl-tmp/test/json/koniq.json
+  test_image_path: /root/autodl-tmp/test/koniq10k
   n_px: 224
 
 

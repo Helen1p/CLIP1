@@ -79,13 +79,12 @@ def main(args):
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
 
         # 1.test on OG clip
-        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
-        # model, _ = clip.load("ViT-B/32", device=device, jit=False) # must set jit=False for training
+        # model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
 
         # 2.test on our checkpoint
-        # ckpt_path = config['test']['ckpt']
-        # checkpoint=torch.load(ckpt_path, map_location=device)
-        # model=build_model(checkpoint['state_dict'], PE=True).to(device)
+        ckpt_path = config['test']['ckpt']
+        checkpoint=torch.load(ckpt_path, map_location=device)
+        model=build_model(checkpoint['state_dict'], PE=True).to(device)
         # q bench/clip iqa, q align
         pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
         pred_list1 = pred_list[0]
