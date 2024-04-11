@@ -27,8 +27,11 @@ def load_config(path):
 
 def main(args):
     config=load_config(args.config_path)
+    frozen_layers=False
+    if args.mode=='fine_tune' and args.frozen_layers:
+        frozen_layers=True
 
-    if args.mode == 'train':
+    if args.mode == 'train' or args.mode == 'fine_tune':
         # fine tune / train from scratch
         train_dataset=image_title_dataset(config['dataset']['train_json_path'], config['dataset']['train_image_path'], config['dataset']['n_px'])
         # train_dataset=image_title_dataset('/root/CLIP/data.csv', 224)
@@ -39,9 +42,10 @@ def main(args):
 
         # TODO: change to DDP
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
-        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+        
+        # must set jit=False for training
+        model, _ = clip.load("ViT-B/32", device=device, jit=False, mode=args.mode, frozen_layers=frozen_layers)
         # initialize optimizer
-        # optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=5e-5, betas=(0.9,0.98), eps=1e-6, weight_decay=0.2)
         optimizer=getattr(sys.modules['torch.optim'],config['optimizer']['name'])
         optimizer=optimizer(filter(lambda p: p.requires_grad, model.parameters()),
                 lr=eval(config['optimizer']['lr']),
@@ -79,12 +83,12 @@ def main(args):
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
 
         # 1.test on OG clip
-        # model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+        # model, _ = clip.load("ViT-L/14", device=device, jit=False, mode=args.mode, frozen_layers=frozen_layers)
 
         # 2.test on our checkpoint
         ckpt_path = config['test']['ckpt']
         checkpoint=torch.load(ckpt_path, map_location=device)
-        model=build_model(checkpoint['state_dict'], PE=True).to(device)
+        model=build_model(checkpoint['state_dict'], mode=args.mode, frozen_layers=frozen_layers, PE=True).to(device)
         # q bench/clip iqa, q align
         pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
         pred_list1 = pred_list[0]
@@ -96,8 +100,10 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type=str, default='/root/CLIP1/config/train.yaml',
                         help='Config path of models')
-    parser.add_argument('--mode', type=str, default='test',
-                        help='train or test')
+    parser.add_argument('--mode', type=str, default='fine_tune',
+                        help='train or test or fine_tune')
+    parser.add_argument('--frozen_layers', type=bool, default=True,
+                        help='frozen_layers')
     args=parser.parse_args()
 
     main(args)

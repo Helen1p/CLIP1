@@ -1,11 +1,79 @@
 from collections import OrderedDict
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.cuda.amp import autocast, GradScaler
+
+
+def get_optim_params(model_name: str):
+    if model_name in ['ViT-B/32', 'ViT-B/16']:
+        return ['visual.transformer.resblocks.11.attn.in_proj_weight',
+                'visual.transformer.resblocks.11.attn.in_proj_bias',
+                'visual.transformer.resblocks.11.attn.out_proj.weight',
+                'visual.transformer.resblocks.11.attn.out_proj.bias',
+                'visual.transformer.resblocks.11.ln_1.weight',
+                'visual.transformer.resblocks.11.ln_1.bias',
+                'visual.transformer.resblocks.11.mlp.c_fc.weight',
+                'visual.transformer.resblocks.11.mlp.c_fc.bias',
+                'visual.transformer.resblocks.11.mlp.c_proj.weight',
+                'visual.transformer.resblocks.11.mlp.c_proj.bias',
+                'visual.transformer.resblocks.11.ln_2.weight',
+                'visual.transformer.resblocks.11.ln_2.bias',
+                'visual.ln_post.weight',
+                'visual.ln_post.bias',
+                'visual.proj',
+                'transformer.resblocks.11.attn.in_proj_weight',
+                'transformer.resblocks.11.attn.in_proj_bias',
+                'transformer.resblocks.11.attn.out_proj.weight',
+                'transformer.resblocks.11.attn.out_proj.bias',
+                'transformer.resblocks.11.ln_1.weight',
+                'transformer.resblocks.11.ln_1.bias',
+                'transformer.resblocks.11.mlp.c_fc.weight',
+                'transformer.resblocks.11.mlp.c_fc.bias',
+                'transformer.resblocks.11.mlp.c_proj.weight',
+                'transformer.resblocks.11.mlp.c_proj.bias',
+                'transformer.resblocks.11.ln_2.weight',
+                'transformer.resblocks.11.ln_2.bias',
+                'ln_final.weight',
+                'ln_final.bias',
+                'text_projection']
+    elif model_name in ['ViT-L/14', 'ViT-L/14@336px']:
+        return ['visual.transformer.resblocks.23.attn.in_proj_weight',
+                'visual.transformer.resblocks.23.attn.in_proj_bias',
+                'visual.transformer.resblocks.23.attn.out_proj.weight',
+                'visual.transformer.resblocks.23.attn.out_proj.bias',
+                'visual.transformer.resblocks.23.ln_1.weight',
+                'visual.transformer.resblocks.23.ln_1.bias',
+                'visual.transformer.resblocks.23.mlp.c_fc.weight',
+                'visual.transformer.resblocks.23.mlp.c_fc.bias',
+                'visual.transformer.resblocks.23.mlp.c_proj.weight',
+                'visual.transformer.resblocks.23.mlp.c_proj.bias',
+                'visual.transformer.resblocks.23.ln_2.weight',
+                'visual.transformer.resblocks.23.ln_2.bias',
+                'visual.ln_post.weight',
+                'visual.ln_post.bias',
+                'visual.proj',
+                'transformer.resblocks.11.attn.in_proj_weight',
+                'transformer.resblocks.11.attn.in_proj_bias',
+                'transformer.resblocks.11.attn.out_proj.weight',
+                'transformer.resblocks.11.attn.out_proj.bias',
+                'transformer.resblocks.11.ln_1.weight',
+                'transformer.resblocks.11.ln_1.bias',
+                'transformer.resblocks.11.mlp.c_fc.weight',
+                'transformer.resblocks.11.mlp.c_fc.bias',
+                'transformer.resblocks.11.mlp.c_proj.weight',
+                'transformer.resblocks.11.mlp.c_proj.bias',
+                'transformer.resblocks.11.ln_2.weight',
+                'transformer.resblocks.11.ln_2.bias',
+                'ln_final.weight',
+                'ln_final.bias',
+                'text_projection']
+    else:
+        print(f"no {model_name}")
+
 
 
 class Bottleneck(nn.Module):
@@ -402,7 +470,7 @@ def convert_weights(model: nn.Module):
     model.apply(_convert_weights_to_fp16)
 
 
-def build_model(state_dict: dict, PE=True):
+def build_model(state_dict: dict, mode: str, frozen_layers: bool, PE=True, name: Optional[str] = None):
     vit = "visual.proj" in state_dict
 
     if vit:
@@ -426,7 +494,7 @@ def build_model(state_dict: dict, PE=True):
     transformer_width = state_dict["ln_final.weight"].shape[0]
     transformer_heads = transformer_width // 64
     transformer_layers = len(set(k.split(".")[2] for k in state_dict if k.startswith("transformer.resblocks")))
-
+    
     model = CustomCLIP(
         embed_dim,
         image_resolution, vision_layers, vision_width, vision_patch_size,
@@ -440,7 +508,16 @@ def build_model(state_dict: dict, PE=True):
 
     convert_weights(model)
     # fine tune ？原始的ViT-B-32.pt没有optimizer参数
-    # model.load_state_dict(state_dict)
+    if mode=='fine_tune':
+        model.load_state_dict(state_dict)
+        if frozen_layers:
+            optim_params = get_optim_params(name)
+            for names, param in model.named_parameters():
+                if names not in optim_params:
+                    param.requires_grad = False
+    elif mode=='test':
+        model.load_state_dict(state_dict)
+
     return model.eval()
 
 if __name__=='__main__':

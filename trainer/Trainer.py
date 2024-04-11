@@ -153,8 +153,8 @@ class trainer():
                 pbar.set_postfix({'Epoch': epoch,
                                 'loss': self.train_loss.avg})
             self.writer.add_scalar('loss', self.train_loss.avg, epoch)
-#             if (epoch>=40 and epoch %10==0 and epoch<=80) or (epoch>80):
-            self.save_ckpt(epoch, save_best=False)
+            if epoch %10==0:
+                self.save_ckpt(epoch, save_best=False)
             
         return
     

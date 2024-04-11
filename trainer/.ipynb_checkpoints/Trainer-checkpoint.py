@@ -121,6 +121,7 @@ class trainer():
 
     def train(self):
         scaler = GradScaler()
+        self.load_ckpt(r'/root/autodl-tmp/checkpoint/checkpoint_epoch19.pth')
 
         for epoch in range(self.start_epoch,self.epoch):
             # result=self.train_epoch(epoch, scaler)
@@ -153,8 +154,8 @@ class trainer():
                 pbar.set_postfix({'Epoch': epoch,
                                 'loss': self.train_loss.avg})
             self.writer.add_scalar('loss', self.train_loss.avg, epoch)
-#             if (epoch>=40 and epoch %10==0 and epoch<=80) or (epoch>80):
-            self.save_ckpt(epoch, save_best=False)
+            if (epoch %10==0 and epoch<=80):
+                self.save_ckpt(epoch+20, save_best=False)
             
         return
     

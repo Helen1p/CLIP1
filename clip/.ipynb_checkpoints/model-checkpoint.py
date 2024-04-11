@@ -440,7 +440,7 @@ def build_model(state_dict: dict, PE=True):
 
     convert_weights(model)
     # fine tune ？原始的ViT-B-32.pt没有optimizer参数
-    model.load_state_dict(state_dict)
+    # model.load_state_dict(state_dict)
     return model.eval()
 
 if __name__=='__main__':

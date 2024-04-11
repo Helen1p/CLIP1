@@ -39,7 +39,7 @@ def main(args):
 
         # TODO: change to DDP
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
-        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+        model, _ = clip.load("ViT-B/32", device=device, jit=False) # must set jit=False for training
         # initialize optimizer
         # optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=5e-5, betas=(0.9,0.98), eps=1e-6, weight_decay=0.2)
         optimizer=getattr(sys.modules['torch.optim'],config['optimizer']['name'])
@@ -79,13 +79,12 @@ def main(args):
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
 
         # 1.test on OG clip
-        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
-        # model, _ = clip.load("ViT-B/32", device=device, jit=False) # must set jit=False for training
+        # model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
 
         # 2.test on our checkpoint
-        # ckpt_path = config['test']['ckpt']
-        # checkpoint=torch.load(ckpt_path, map_location=device)
-        # model=build_model(checkpoint['state_dict'], PE=True).to(device)
+        ckpt_path = config['test']['ckpt']
+        checkpoint=torch.load(ckpt_path, map_location=device)
+        model=build_model(checkpoint['state_dict'], PE=True).to(device)
         # q bench/clip iqa, q align
         pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
         pred_list1 = pred_list[0]
@@ -97,7 +96,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type=str, default='/root/CLIP1/config/train.yaml',
                         help='Config path of models')
-    parser.add_argument('--mode', type=str, default='test',
+    parser.add_argument('--mode', type=str, default='train',
                         help='train or test')
     args=parser.parse_args()
 
