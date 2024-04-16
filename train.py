@@ -27,8 +27,11 @@ def load_config(path):
 
 def main(args):
     config=load_config(args.config_path)
+    frozen_layers=False
+    if args.mode=='fine_tune' and args.frozen_layers:
+        frozen_layers=True
 
-    if args.mode == 'train':
+    if args.mode == 'train' or args.mode == 'fine_tune':
         # fine tune / train from scratch
         train_dataset=image_title_dataset(config['dataset']['train_json_path'], config['dataset']['train_image_path'], config['dataset']['n_px'])
         # train_dataset=image_title_dataset('/root/CLIP/data.csv', 224)
@@ -39,9 +42,10 @@ def main(args):
 
         # TODO: change to DDP
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
-        model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+        
+        # must set jit=False for training
+        model, _ = clip.load("ViT-L/14", device=device, jit=False, mode=args.mode, frozen_layers=frozen_layers)
         # initialize optimizer
-        # optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=5e-5, betas=(0.9,0.98), eps=1e-6, weight_decay=0.2)
         optimizer=getattr(sys.modules['torch.optim'],config['optimizer']['name'])
         optimizer=optimizer(filter(lambda p: p.requires_grad, model.parameters()),
                 lr=eval(config['optimizer']['lr']),
@@ -75,29 +79,39 @@ def main(args):
         # zero shot MOS / zero shot attributes classifer
         test_dataset=test_MOS_dataset(config['dataset']['test_json_path'], config['dataset']['test_image_path'], config['dataset']['n_px'])
         # len(test_dataset)=2985, len(test_loader)=12
-        test_loader=DataLoader(test_dataset, config['test']['batch_size'], num_workers=4)
+        test_loader=DataLoader(test_dataset, config['test']['batch_size'], num_workers=1)
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
 
         # 1.test on OG clip
-        # model, _ = clip.load("ViT-L/14", device=device, jit=False) # must set jit=False for training
+        # model, _ = clip.load("ViT-B/32", device=device, jit=False, mode=args.mode, frozen_layers=frozen_layers)
 
         # 2.test on our checkpoint
         ckpt_path = config['test']['ckpt']
         checkpoint=torch.load(ckpt_path, map_location=device)
-        model=build_model(checkpoint['state_dict'], PE=True).to(device)
+        model=build_model(checkpoint['state_dict'], mode=args.mode, frozen_layers=frozen_layers, PE=True).to(device)
         # q bench/clip iqa, q align
         pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
         pred_list1 = pred_list[0]
+        # #srcc for feature npz generation
         srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list1, target_list)
         print('srocc: ', srocc_, ' plcc: ', plcc_)
+
+        # save visual encoder features of different layers
+        # pred_list, target_list, feature = zero_shot_eval(model=model, data_loader=test_loader, device=device)
+        # np.savez('/data/pxg1/CLIP1/npz_data/arrays_ai.npz', l23=feature[23], l22=feature[22], 
+        #         l21=feature[21], l20=feature[20], l19=feature[19])
+        # np.savez('/data/pxg1/CLIP1/npz_data/arrays_wild.npz', l23=feature[23], l22=feature[22], 
+        #         l21=feature[21], l20=feature[20], l19=feature[19])
 
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config_path', type=str, default='/root/CLIP1/config/train.yaml',
+    parser.add_argument('--config_path', type=str, default='/data/pxg1/CLIP1/config/train.yaml',
                         help='Config path of models')
     parser.add_argument('--mode', type=str, default='test',
-                        help='train or test')
+                        help='train or test or fine_tune')
+    parser.add_argument('--frozen_layers', type=bool, default=True,
+                        help='frozen_layers')
     args=parser.parse_args()
 
     main(args)

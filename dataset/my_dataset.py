@@ -25,23 +25,7 @@ def transform(n_px):
         ToTensor(),
         Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711)),
     ])
-# train
-# csv 版本
-# class image_title_dataset(Dataset):
-#     def __init__(self, input_filename, n_px):
-#         df = pd.read_csv(input_filename)
-#         self.list_image = df["image"].tolist()
-#         self.list_caption = df["caption"].tolist()
-#         self.preprocess=transform(n_px)
-    
-#     def __len__(self):
-#         return len(self.list_caption)
-    
-#     def __getitem__(self,idx):
-#         images=self.preprocess(Image.open(self.list_image[idx]))
-#         texts=clip.tokenize(self.list_caption[idx])[0] # [1, 77] -> [77]
-#         return images, texts
-    
+
 
 class image_title_dataset(Dataset):
     def __init__(self, train_json_path, train_image_path, n_px):
@@ -63,24 +47,6 @@ class image_title_dataset(Dataset):
         images=self.preprocess(Image.open(os.path.join(self.root_path, self.list_image[idx])))
         texts=clip.tokenize(self.list_caption_local[idx][0], truncate=True)[0] # [1, 77] -> [77]
         return images, texts
-
-
-# test: image + target(MOS)
-# csv 版本
-# class test_MOS_dataset(Dataset):
-#     def __init__(self, input_filename, n_px):
-#         df = pd.read_csv(input_filename)
-#         self.list_image = df["image"].tolist()
-#         self.list_MOS = df["MOS"].tolist()
-#         self.preprocess=transform(n_px)
-    
-#     def __len__(self):
-#         return len(self.list_MOS)
-    
-#     def __getitem__(self,idx):
-#         images=self.preprocess(Image.open(self.list_image[idx]))
-#         MOS=self.list_MOS[idx] 
-#         return images, MOS
     
 
 class test_MOS_dataset(Dataset):
@@ -93,7 +59,7 @@ class test_MOS_dataset(Dataset):
         self.test_image_path=test_image_path
     
     def __len__(self):
-        return len(self.list_MOS)
+        return len(self.list_image)
     
     def __getitem__(self,idx):
         images=self.preprocess(Image.open(os.path.join(self.test_image_path, self.list_image[idx])))

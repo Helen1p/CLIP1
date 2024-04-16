@@ -102,7 +102,7 @@ class trainer():
         # metrics reset
 
         with torch.no_grad():
-            pbar = tqdm(self.valid_loader, total=len(self.valid_loader))
+            pbar = tqdm(self.valid_loader, total=len(self.valid_loader), mininterval=10)
             for batch_idx,(image, text) in enumerate(pbar):
                 n=image.shape[0]
                 image, text=image.to(self.device), text.to(self.device)
@@ -127,7 +127,7 @@ class trainer():
             self.train_loss.reset()
             self.model.train()
             
-            pbar = tqdm(self.train_loader, total=len(self.train_loader))
+            pbar = tqdm(self.train_loader, total=len(self.train_loader), mininterval=10)
             for batch_idx, (image, text) in enumerate(pbar):
                 # model的todevice放到train.py里面
                 image, text=image.to(self.device), text.to(self.device)
@@ -135,7 +135,7 @@ class trainer():
                 groundtruth=torch.arange(len(image),dtype=torch.long, device=self.device)
                 self.optimizer.zero_grad()
                 with autocast():
-                    logits_per_image, logits_per_text=self.model(image,text)
+                    logits_per_image, logits_per_text, _=self.model(image,text)
                     total_loss=(self.loss_image(logits_per_image, groundtruth)+self.loss_text(logits_per_text, groundtruth))/2
                 # scaler.scale(total_loss).backward()
                 # scaler.step(self.optimizer)

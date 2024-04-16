@@ -9,14 +9,14 @@ from torch import nn
 from clip import tokenize
 
 
-CLASSNAMES=[
-    ['Excellent photo.', 'Good photo.', 'Fair photo.', 'Poor photo.', 'Bad photo.'],
-]
+# CLASSNAMES=[
+#     ['Excellent photo.', 'Good photo.', 'Fair photo.', 'Poor photo.', 'Bad photo.'],
+# ]
 
 # test Koniq and liveiwt dataset
-# CLASSNAMES=[
-#     ['Good photo.', 'Bad photo.'],
-# ]
+CLASSNAMES=[
+    ['Good photo.', 'Bad photo.'],
+]
 
 # test degradation attributes
 # CLASSNAMES=[
@@ -72,6 +72,9 @@ def zero_shot_eval(model, data_loader, device):
             for i in range(len(CLASSNAMES)):
                 # 1.clip-iqa
                 logits_per_image, logits_per_text = model(image, tokenized_prompts[i].to(device))
+
+                # logits_per_image, logits_per_text, feature = model(image, tokenized_prompts[i].to(device))
+                # fe=[i.detach().cpu().numpy() for i in feature]
                 
                 # 2.open-clip
                 # image_features=model.encode_image(image) # [bs, 512]
@@ -82,9 +85,9 @@ def zero_shot_eval(model, data_loader, device):
                 # logits_per_image = 100. * image_features @ class_embeddings # [bs, class_num]
 
                 logits = logits_per_image.softmax(dim=-1) # [bs, class_num]
-                # score_rank=torch.Tensor([1, 0]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
+                score_rank=torch.Tensor([1, 0]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
                 # score_rank=torch.Tensor([1, 0.75, 0.5, 0.25, 0.]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
-                score_rank=torch.Tensor([1, 0.8, 0.6, 0.4, 0.1]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
+                # score_rank=torch.Tensor([1, 0.8, 0.6, 0.4, 0.1]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
                 pred = logits @ score_rank # [bs, 1]
                 # logits_list.append(logits[:, 0].unsqueeze(1)) # [bs, 1]
                 logits_list.append(pred)
@@ -98,3 +101,4 @@ def zero_shot_eval(model, data_loader, device):
             print('******************',idx,' end******************')
         pred_list=torch.cat(pred_score, dim=0).T.detach().cpu().tolist() #[all, n]->[n, all]->[[all个],..n个..,[]]
     return pred_list, target_list
+    # return pred_list, target_list, fe

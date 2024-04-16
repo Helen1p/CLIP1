@@ -1,9 +1,0 @@
-q_pathway2.json: 1个image对应all个description，有一些错误
-q_pathway3.json: 1个image对应1个description
-q_pathway2_no_mistake.json: 删掉了一些错误
-final_merge.json: 将每个image的3个local和3个global放在一起，并且删掉了一些错误
-global.json: 所有有标签的image和对应分数
-partial_change_global.json: 将有标签的global都统一了
-need2unify.json: 没有标签的，global没法统一
-new.json: partial_change_global.json + need2unify.json
-

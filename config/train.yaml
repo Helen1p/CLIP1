@@ -1,10 +1,10 @@
 train:
-  epoch: 20
+  epoch: 10
   batch_size: 32
-  ckpt_save_path: /root/autodl-tmp/checkpoint/
+  ckpt_save_path: /data/pxg1/data/checkpoint/
   ckpt: None
   scaler: None
-  log_dir: /root/tf-logs
+  log_dir: /data/pxg1/CLIP1/tf-logs/
 
 optimizer:
   name: Adam
@@ -19,26 +19,26 @@ optimizer:
 #   eta_min: 0.00001
 
 test:
-  batch_size: 256
-  ckpt: /root/autodl-tmp/checkpoint/checkpoint_epoch16.pth
+  batch_size: 128
+  ckpt: /data/pxg1/data/checkpoint/checkpoint_epoch9.pth
 
 
 dataset:
-  train_json_path: /root/CLIP1/json_data/new.json
-  train_image_path: /root/autodl-tmp/q-instruct-images
+  train_json_path: /data/pxg1/CLIP1/json_data/new.json
+  train_image_path: /data/pxg1/data/q-instruct-images
   valid_input_filename: None
-  test_json_path: /root/autodl-tmp/test/json/koniq.json
-  test_image_path: /root/autodl-tmp/test/koniq10k
+  test_json_path: /data/pxg1/data/test/json/agi1.json
+  test_image_path: /data/pxg1/data/test/AGIQA-3K
   n_px: 224
 
 
 # [test_json_path, test_image_path]
-# [/root/autodl-tmp/test/json/kadid.json, /root/autodl-tmp/test/kadid10k]
-# [/root/autodl-tmp/test/json/agi.json, /root/autodl-tmp/test/AGIQA-3K]
-# [/root/autodl-tmp/test/json/cgi.json, /root/autodl-tmp/test/CGIQA-6K]
-# [/root/autodl-tmp/test/json/flive.json, /root/autodl-tmp/test/flive]
-# [/root/autodl-tmp/test/json/koniq.json, /root/autodl-tmp/test/koniq10k]
-# [/root/autodl-tmp/test/json/livec.json, /root/autodl-tmp/test/livec]
-# [/root/autodl-tmp/test/json/spaq.json, /root/autodl-tmp/test/SPAQ/TestImage]
+# [/test/json/kadid.json, /test/kadid10k]
+# [/test/json/agi.json, /test/AGIQA-3K]
+# [/test/json/cgi.json, /test/CGIQA-6K]
+# [/test/json/flive.json, /test/flive]
+# [/test/json/koniq.json, /test/koniq10k]
+# [/test/json/livec.json, /test/livec]
+# [/test/json/spaq.json, /test/SPAQ/TestImage]
 
 
