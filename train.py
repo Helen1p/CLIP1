@@ -33,7 +33,7 @@ def main(args):
 
     if args.mode == 'train' or args.mode == 'fine_tune':
         # fine tune / train from scratch
-        train_dataset=image_title_dataset(config['dataset']['train_json_path'], config['dataset']['train_image_path'], config['dataset']['n_px'])
+        train_dataset=image_title_dataset(config['dataset']['train_json_path'], config['dataset']['train_image_path'], config['dataset']['n_px'], config['dataset']['train_prior_path'])
         # train_dataset=image_title_dataset('/root/CLIP/data.csv', 224)
 
         # valid_dataset=image_title_dataset(config['dataset']['valid_input_filename'], config['dataset']['n_px'])

@@ -337,6 +337,20 @@ class VisionTransformer(nn.Module):
         return x
 
 
+class prior_fusion(nn.Module):
+    def __init__(self, kernel_size):
+        super().__init__()
+        self.conv = nn.Conv2d(4, 3, kernel_size=kernel_size, stride=1, padding=1, bias=False)
+        
+    def forward(self, image, prior):
+        # image=image.unsqueeze(dim=1)
+        prior=prior.unsqueeze(dim=1)
+        all=torch.cat((image, prior), dim=1)
+        all=self.conv(all)
+        # all=all.squeeze(dim=1)
+        return all
+
+
 class CustomCLIP(nn.Module):
     def __init__(self,
                  embed_dim: int,
@@ -394,6 +408,7 @@ class CustomCLIP(nn.Module):
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
         self.initialize_parameters()
+        self.prior_fusion=prior_fusion(kernel_size=3)
 
     def initialize_parameters(self):
         nn.init.normal_(self.token_embedding.weight, std=0.02)
@@ -456,8 +471,11 @@ class CustomCLIP(nn.Module):
 
         return x
 
-    def forward(self, image, text):
+    def forward(self, image, text, prior: Optional[torch.Tensor] = None):
+    # def forward(self, image, text):
         # DDP时需要with aotocast():
+        if self.training:
+            image = self.prior_fusion(image, prior)
         image_features = self.encode_image(image) # [bs, 512]
         text_features = self.encode_text(text) # [bs, 512]
 
@@ -537,14 +555,15 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, PE=True, name:
     convert_weights(model)
     # fine tune ？原始的ViT-B-32.pt没有optimizer参数
     if mode=='fine_tune':
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
         if frozen_layers:
             optim_params = get_optim_params(name)
             for names, param in model.named_parameters():
                 if names not in optim_params:
                     param.requires_grad = False
     elif mode=='test':
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
+        # print(model)
 
     return model.eval()
 

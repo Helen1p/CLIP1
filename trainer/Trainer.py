@@ -128,14 +128,14 @@ class trainer():
             self.model.train()
             
             pbar = tqdm(self.train_loader, total=len(self.train_loader), mininterval=10)
-            for batch_idx, (image, text) in enumerate(pbar):
+            for batch_idx, (image, text, prior) in enumerate(pbar):
                 # model的todevice放到train.py里面
-                image, text=image.to(self.device), text.to(self.device)
+                image, text, prior = image.to(self.device), text.to(self.device), prior.to(self.device)
                 n=image.shape[0]
                 groundtruth=torch.arange(len(image),dtype=torch.long, device=self.device)
                 self.optimizer.zero_grad()
                 with autocast():
-                    logits_per_image, logits_per_text, _=self.model(image,text)
+                    logits_per_image, logits_per_text=self.model(image, text, prior)
                     total_loss=(self.loss_image(logits_per_image, groundtruth)+self.loss_text(logits_per_text, groundtruth))/2
                 # scaler.scale(total_loss).backward()
                 # scaler.step(self.optimizer)
@@ -153,8 +153,8 @@ class trainer():
                 pbar.set_postfix({'Epoch': epoch,
                                 'loss': self.train_loss.avg})
             self.writer.add_scalar('loss', self.train_loss.avg, epoch)
-            if epoch %10==0:
-                self.save_ckpt(epoch, save_best=False)
+            # if epoch+1 %10==0:
+            self.save_ckpt(epoch, save_best=False)
             
         return
     

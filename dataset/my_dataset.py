@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 import clip
 from PIL import Image
@@ -5,6 +6,8 @@ from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normal
 import pandas as pd
 import json
 import os
+import numpy as np
+import cv2
 
 
 try:
@@ -28,7 +31,7 @@ def transform(n_px):
 
 
 class image_title_dataset(Dataset):
-    def __init__(self, train_json_path, train_image_path, n_px):
+    def __init__(self, train_json_path, train_image_path, n_px, train_prior_path=None):
         with open(train_json_path, 'r') as f:
             self.data=json.load(f)
         self.list_image = [x['image'] for x in self.data]
@@ -38,6 +41,8 @@ class image_title_dataset(Dataset):
         self.list_caption_global = [x['global'] for x in self.data]
         self.preprocess=transform(n_px)
         self.root_path=train_image_path
+        self.train_prior_path=train_prior_path
+        self.n_px=n_px
     
     def __len__(self):
         return len(self.list_image)
@@ -45,8 +50,14 @@ class image_title_dataset(Dataset):
     def __getitem__(self,idx):
         # caption太长了，truncate = Ture
         images=self.preprocess(Image.open(os.path.join(self.root_path, self.list_image[idx])))
+        # FileNotFoundError
+        prior_image=self.list_image[idx].split('.')[0]+'.npy'
+        prior=np.load(os.path.join(self.train_prior_path, prior_image), allow_pickle=True)
+        # prior=np.asarray(prior)
+        prior=cv2.resize(prior, [self.n_px, self.n_px])
+        prior=torch.Tensor(prior)
         texts=clip.tokenize(self.list_caption_local[idx][0], truncate=True)[0] # [1, 77] -> [77]
-        return images, texts
+        return images, texts, prior
     
 
 class test_MOS_dataset(Dataset):
@@ -63,7 +74,7 @@ class test_MOS_dataset(Dataset):
     
     def __getitem__(self,idx):
         images=self.preprocess(Image.open(os.path.join(self.test_image_path, self.list_image[idx])))
-        MOS=self.list_MOS[idx] 
+        MOS=self.list_MOS[idx]
         return images, MOS
 
 
@@ -72,7 +83,12 @@ class test_MOS_dataset(Dataset):
 # for webdata: .tar
 
 if __name__=='__main__':
-    df=pd.read_csv('/root/CLIP1/data_test.csv')
-    a=df["MOS"].tolist()
-    # 就是int啊
-    print(type(a[0]))
+    with open('/data/pxg1/CLIP1/json_data/new_1.json', 'r') as f:
+            data=json.load(f)
+    list_image = [x['image'] for x in data]
+    for idx in range(len(list_image)):
+        prior_image=list_image[idx].split('.')[0]+'.npy'
+        prior=np.load(os.path.join('/data/pxg1/data/q-instruct-images-embed', prior_image), allow_pickle=True)
+        print(list_image[idx], prior.shape, type(prior))
+        prior=cv2.resize(prior, [224, 224])
+# AVA__427243.jpg

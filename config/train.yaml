@@ -1,5 +1,5 @@
 train:
-  epoch: 10
+  epoch: 20
   batch_size: 32
   ckpt_save_path: /data/pxg1/data/checkpoint/
   ckpt: None
@@ -24,11 +24,12 @@ test:
 
 
 dataset:
-  train_json_path: /data/pxg1/CLIP1/json_data/new.json
+  train_json_path: /data/pxg1/CLIP1/json_data/new_1.json
   train_image_path: /data/pxg1/data/q-instruct-images
+  train_prior_path: /data/pxg1/data/q-instruct-images-embed
   valid_input_filename: None
-  test_json_path: /data/pxg1/data/test/json/agi1.json
-  test_image_path: /data/pxg1/data/test/AGIQA-3K
+  test_json_path: /data/pxg1/data/test/json/koniq.json
+  test_image_path: /data/pxg1/data/test/koniq10k
   n_px: 224
 
 
