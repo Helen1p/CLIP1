@@ -1,0 +1,48 @@
+train:
+  epoch: 1
+  batch_size: 32
+  # fine tune all 16 ; frozen layer 32
+  ckpt_save_path: /data2/pxg1/data/checkpoint/
+  ckpt: None
+  scaler: None
+  log_dir: /data/pxg1/CLIP1/tf-logs/
+  variant_clip: /data/pxg1/data/checkpoint/longclip-B.pt
+
+optimizer:
+  name: Adam
+  lr: 1e-4
+  betas: (0.9,0.98)
+  eps: 1e-6
+  weight_decay: 0.2
+
+# lr_scheduler: 
+#   name: CosineAnnealingLR
+#   T_max: 15
+#   eta_min: 0.00001
+
+test:
+  batch_size: 256
+  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch0.pth
+
+
+dataset:
+  # train_json_path: /data/pxg1/CLIP1/json_data/new_1.json #有先验的
+  train_json_path: /data/pxg1/CLIP1/json_data/new.json
+  train_image_path: /data/pxg1/data/q-instruct-images
+  train_prior_path: /data/pxg1/data/q-instruct-images-dinov2
+  valid_input_filename: None
+  test_json_path: /data/pxg1/data/test/json/koniq.json
+  test_image_path: /data/pxg1/data/test/koniq10k
+  n_px: 224
+
+
+# [test_json_path, test_image_path]
+# [/test/json/kadid.json, /test/kadid10k]
+# [/test/json/agi.json, /test/AGIQA-3K]
+# [/test/json/cgi.json, /test/CGIQA-6K]
+# [/test/json/flive.json, /test/flive]
+# [/test/json/koniq.json, /test/koniq10k]
+# [/test/json/livec.json, /test/livec]
+# [/test/json/spaq.json, /test/SPAQ/TestImage]
+
+
