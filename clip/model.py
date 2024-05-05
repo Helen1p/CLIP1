@@ -102,7 +102,6 @@ def get_optim_params(model_name: str):
         print("no model_name")
 
 
-
 class Bottleneck(nn.Module):
     expansion = 4
 
