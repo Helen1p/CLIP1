@@ -1,6 +1,6 @@
 train:
-  epoch: 1
-  batch_size: 32
+  epoch: 50
+  batch_size: 8
   # fine tune all 16 ; frozen layer 32
   ckpt_save_path: /data2/pxg1/data/checkpoint/
   ckpt: None
@@ -22,7 +22,7 @@ optimizer:
 
 test:
   batch_size: 256
-  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch0.pth
+  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch9.pth
 
 
 dataset:

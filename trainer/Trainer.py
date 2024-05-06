@@ -108,7 +108,7 @@ class trainer():
             for batch_idx, (image, text) in enumerate(pbar):
                 # model的todevice放到train.py里面
                 # image, text, prior = image.to(self.device), text.to(self.device), prior.to(self.device)
-                image, text, prior = image.cuda(self.local_rank), text.cuda(self.local_rank), prior.cuda(self.local_rank)
+                # image, text, prior = image.cuda(self.local_rank), text.cuda(self.local_rank), prior.cuda(self.local_rank)
                 image, text = image.cuda(self.local_rank), text.cuda(self.local_rank)
                 # image, text = image.to(self.device), text.to(self.device)
                 # n=image.shape[0]
@@ -174,8 +174,7 @@ class trainer():
                 pbar.set_postfix({'Epoch': epoch,
                                 'loss': self.train_loss.avg})
             self.writer.add_scalar('loss', self.train_loss.avg, epoch)
-            # if epoch+1 %10==0:
-            if self.local_rank==0:
+            if self.local_rank==0 and (((epoch+1) %10==0 and epoch <40) or ((epoch+1) %5==0 and epoch >=40)):
                 self.save_ckpt(epoch, save_best=False)
             
         return

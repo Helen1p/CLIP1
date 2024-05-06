@@ -482,7 +482,7 @@ class CustomCLIP(nn.Module):
     def dtype(self):
         return self.visual.conv1.weight.dtype
 
-    def encode_image(self, image, prior):
+    def encode_image(self, image, prior: Optional[torch.Tensor] = None):
         # only modified for vit
         if prior is not None:
             return self.visual(image.type(self.dtype), prior.type(self.dtype))

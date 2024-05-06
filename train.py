@@ -15,9 +15,6 @@ from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
 
 
-local_rank = int(os.environ["LOCAL_RANK"])
-
-
 # fix random seeds for reproducibility
 SEED = 123
 torch.manual_seed(SEED)
@@ -40,6 +37,12 @@ def main(args):
 
     if args.mode == 'train' or args.mode == 'fine_tune':
         # fine tune / train from scratch
+
+        local_rank = int(os.environ["LOCAL_RANK"])
+        # local_rank 用os或者args.local_rank传（但torchrun已经把args.local_rank淘汰了），反正是不能dist.get_rank()
+        torch.distributed.init_process_group("nccl", world_size=args.n_gpus, rank=local_rank)
+        torch.cuda.set_device(local_rank) # CUDA_VISIBLE_DEVICES是哪几张可以看见，这个是在可见的基础上用n_gpus
+
         if args.load_from_clip==False:
             context_length=248
         else:
@@ -49,7 +52,7 @@ def main(args):
         train_sampler=DistributedSampler(train_dataset)
 
         # valid_dataset=image_title_dataset(config['dataset']['valid_input_filename'], config['dataset']['n_px'])
-        train_loader=DataLoader(train_dataset, config['train']['batch_size'], shuffle=(train_sampler is None), num_workers=2, sampler=train_sampler)
+        train_loader=DataLoader(train_dataset, config['train']['batch_size'], shuffle=(train_sampler is None), num_workers=16, sampler=train_sampler)
         # valid_loader=DataLoader(valid_dataset, config['train']['batch_size'])
 
         # TODO: change to DDP
@@ -95,7 +98,8 @@ def main(args):
                             train_loader=train_loader, 
                             valid_loader=None, 
                             ckpt=ckpt, 
-                            lr_scheduler=lr_scheduler)
+                            lr_scheduler=lr_scheduler,
+                            sampler=train_sampler)
         train_trainer.train()
     
     elif args.mode == 'test':
@@ -135,21 +139,21 @@ if __name__=='__main__':
                         help='Config path of models')
     parser.add_argument('--mode', type=str, default='fine_tune',
                         help='train or test or fine_tune')
-    parser.add_argument('--frozen_layers', type=bool, default=True,
+    parser.add_argument('--frozen_layers', type=bool, default=False,
                         help='frozen_layers')
     parser.add_argument('--load_from_clip', type=bool, default=False,
                         help='context_length = 77 or 248')
     # parser.add_argument("--local_rank", help="local device id on current node",
     #                     type=int)
+    parser.add_argument("--n_gpus", type=int, default=4, 
+                        help="GPU number")
     args=parser.parse_args()
-
-    n_gpus = 2
-    # local_rank = torch.distributed.get_rank()
-    torch.distributed.init_process_group("nccl", world_size=n_gpus, rank=local_rank)
-    torch.cuda.set_device(local_rank) # CUDA_VISIBLE_DEVICES是哪几张可以看见，这个是在可见的基础上用n_gpus
 
     main(args)
 
-    # how to run: torchrun --nnodes 1 --nproc_per_node 2 train.py
+
+    # train/fine_tune: torchrun --nnodes 1 --nproc_per_node 2 train.py
+    # test: python train.py
+
 
     # local rank, clip forward, label在哪个device上
