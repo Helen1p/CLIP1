@@ -158,11 +158,37 @@ class trainer():
 
 
                 total_loss=(self.loss_image(logits_per_image, labels)+self.loss_text(logits_per_text, labels))/2
+                
                 # scaler.scale(total_loss).backward()
                 # scaler.step(self.optimizer)
                 # scaler.update()
+
+                # print(total_loss)
+                # assert torch.isnan(total_loss).sum() == 0, print(total_loss)
+
                 total_loss.backward()
+                # for name, para in self.model.named_parameters():
+                #         if torch.isnan(para).sum()!=0:
+                #             print(name,' is nan')
+                #         if para.grad is None:
+                #             print(name)
+                #         else: 
+                #             if torch.isnan(para.grad).sum()!=0:
+                #                 print(name, 'grad is nan')
+
+                # assert torch.isnan([*self.model.parameters()]).sum() == 0, print([*self.model.parameters()])
+                # assert torch.isnan([*self.model.parameters()].grad).sum()==0, print(self.model.parameters().grad)
+
+
                 self.optimizer.step()
+                # for name, para in self.model.named_parameters():
+                #     if torch.isnan(para).sum()!=0:
+                #         print(name,' is nan')
+                #     if para.grad is None:
+                #         print(name)
+                #     else: 
+                #         if torch.isnan(para.grad).sum()!=0:
+                #             print(name,' grad is nan')
 
                 if self.valid_loader is not None:
                     self.valid_epoch(epoch)
@@ -176,6 +202,13 @@ class trainer():
             self.writer.add_scalar('loss', self.train_loss.avg, epoch)
             if self.local_rank==0 and (((epoch+1) %10==0 and epoch <40) or ((epoch+1) %5==0 and epoch >=40)):
                 self.save_ckpt(epoch, save_best=False)
+            # if epoch==1:
+            #     for name, para in self.model.named_parameters():
+            #         with open('/data/pxg1/CLIP1/log_fine_tune.txt', 'a') as f:
+            #             # f.writelines('*************',epoch, '*************')
+            #             # f.write(name)
+            #             if name=='module.transformer.resblocks.11.mlp.c_fc.weight':
+            #                 f.write(str(para))
             
         return
     

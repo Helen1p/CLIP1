@@ -71,20 +71,22 @@ def main(args):
         # model=build_model(checkpoint, mode=args.mode, frozen_layers=frozen_layers, load_from_clip=True, name='ViT-B/32').to(device)
 
         # initialize optimizer
-        optimizer=getattr(sys.modules['torch.optim'],config['optimizer']['name'])
-        optimizer=optimizer(filter(lambda p: p.requires_grad, model.parameters()),
-                lr=eval(config['optimizer']['lr']),
-                betas=eval(config['optimizer']['betas']),
-                eps=eval(config['optimizer']['eps']),
-                weight_decay=config['optimizer']['weight_decay']
-                )
+        # optimizer=getattr(sys.modules['torch.optim'],config['optimizer']['name'])
+        # optimizer=optimizer(filter(lambda p: p.requires_grad, model.parameters()),
+        #         lr=eval(config['optimizer']['lr']),
+        #         betas=eval(config['optimizer']['betas']),
+        #         eps=eval(config['optimizer']['eps']),
+        #         weight_decay=config['optimizer']['weight_decay']
+        #         )
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, 
+        betas=(0.9,0.98), eps=1e-6, weight_decay=0.2)
         # initialize lr_scheduler
         sc=config.get('lr_scheduler', None)
         if  sc is None:
             lr_scheduler=None
         else:
             # raise error: e.g. milestones=[30,80], because in sc it is '[30,80]'! str!!!
-            scheduler=getattr(sys.modules['torch.optim.lr_scheduler'], config['lr_scheduler']['name'])
+            scheduler=getattr(sys.modules['torch.optim.lr_scheduler'], sc.pop('name'))
             lr_scheduler=scheduler(optimizer, **sc)
         if config['train']['ckpt']=='None':
             ckpt=None
@@ -145,7 +147,7 @@ if __name__=='__main__':
                         help='context_length = 77 or 248')
     # parser.add_argument("--local_rank", help="local device id on current node",
     #                     type=int)
-    parser.add_argument("--n_gpus", type=int, default=4, 
+    parser.add_argument("--n_gpus", type=int, default=8, 
                         help="GPU number")
     args=parser.parse_args()
 

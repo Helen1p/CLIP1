@@ -314,7 +314,7 @@ class VisionTransformer(nn.Module):
 
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim)) # [1024, 768]
-        self.cross_attn = nn.MultiheadAttention(width, heads)
+        # self.cross_attn = nn.MultiheadAttention(width, heads) no grad?
 
 
     def forward(self, x: torch.Tensor, prior: Optional[torch.Tensor] = None):
@@ -605,9 +605,6 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
             for names, param in model.named_parameters():
                 if names not in optim_params:
                     param.requires_grad = False
-        # for names, param in model.named_parameters():
-        #     if param.requires_grad:
-        #         print(names)
         if not load_from_clip:
             positional_embedding_pre = model.positional_embedding.type(model.dtype)
             length, dim = positional_embedding_pre.shape
@@ -629,6 +626,7 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
             positional_embedding_res = posisitonal_embedding_new.clone()
                     
             model.positional_embedding = nn.Parameter(posisitonal_embedding_new, requires_grad=False)
+            # model.positional_embedding = nn.Parameter(posisitonal_embedding_new, requires_grad=True)
             model.positional_embedding_res = nn.Parameter(positional_embedding_res, requires_grad=True)
             model.context_length=248
 
