@@ -6,19 +6,19 @@ train:
   ckpt: None
   scaler: None
   log_dir: /data/pxg1/CLIP1/tf-logs/
-  variant_clip: /data/pxg1/data/checkpoint/longclip-B.pt
+  # variant_clip: /data/pxg1/data/checkpoint/longclip-B.pt
 
 optimizer:
   name: Adam
-  lr: 1e-4
+  lr: 1e-5
   betas: (0.9,0.98)
   eps: 1e-6
   weight_decay: 0.2
 
-# lr_scheduler: 
-#   name: CosineAnnealingLR
-#   T_max: 15
-#   eta_min: 0.00001
+lr_scheduler: 
+  name: CosineAnnealingLR
+  T_max: 15
+  eta_min: 0.000005
 
 test:
   batch_size: 256

@@ -71,15 +71,16 @@ def main(args):
         # model=build_model(checkpoint, mode=args.mode, frozen_layers=frozen_layers, load_from_clip=True, name='ViT-B/32').to(device)
 
         # initialize optimizer
-        # optimizer=getattr(sys.modules['torch.optim'],config['optimizer']['name'])
-        # optimizer=optimizer(filter(lambda p: p.requires_grad, model.parameters()),
-        #         lr=eval(config['optimizer']['lr']),
-        #         betas=eval(config['optimizer']['betas']),
-        #         eps=eval(config['optimizer']['eps']),
-        #         weight_decay=config['optimizer']['weight_decay']
-        #         )
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, 
-        betas=(0.9,0.98), eps=1e-6, weight_decay=0.2)
+        optimizer=getattr(sys.modules['torch.optim'], config['optimizer']['name'])
+        optimizer=optimizer(filter(lambda p: p.requires_grad, model.parameters()),
+                lr=eval(config['optimizer']['lr']),
+                betas=eval(config['optimizer']['betas']),
+                eps=eval(config['optimizer']['eps']),
+                weight_decay=config['optimizer']['weight_decay']
+                )
+        # optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, 
+        # betas=(0.9,0.98), eps=1e-6, weight_decay=0.2)
+
         # initialize lr_scheduler
         sc=config.get('lr_scheduler', None)
         if  sc is None:
