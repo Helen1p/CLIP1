@@ -148,7 +148,7 @@ if __name__=='__main__':
                         help='context_length = 77 or 248')
     # parser.add_argument("--local_rank", help="local device id on current node",
     #                     type=int)
-    parser.add_argument("--n_gpus", type=int, default=8, 
+    parser.add_argument("--n_gpus", type=int, default=2, 
                         help="GPU number")
     args=parser.parse_args()
 
@@ -156,6 +156,9 @@ if __name__=='__main__':
 
 
     # train/fine_tune: torchrun --nnodes 1 --nproc_per_node 2 train.py
+
+
+
     # test: python train.py
 
 

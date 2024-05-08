@@ -10,9 +10,6 @@ fine tune &#x2714;
 
 ## run
 ```
-bash script/fine_tune.sh
+torchrun --nnodes 1 --nproc_per_node 2 train.py
 ....
 ```
-
-【腾讯文档】结果记录
-https://docs.qq.com/sheet/DYWRhUW5la0N1S3JW?tab=BB08J2
