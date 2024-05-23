@@ -1,5 +1,5 @@
 train:
-  epoch: 50
+  epoch: 5
   batch_size: 8
   # fine tune all 16 ; frozen layer 32
   ckpt_save_path: /data2/pxg1/data/checkpoint/
@@ -22,7 +22,7 @@ lr_scheduler:
 
 test:
   batch_size: 256
-  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch9.pth
+  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch1.pth
 
 
 dataset:
@@ -31,8 +31,8 @@ dataset:
   train_image_path: /data/pxg1/data/q-instruct-images
   train_prior_path: /data/pxg1/data/q-instruct-images-dinov2
   valid_input_filename: None
-  test_json_path: /data/pxg1/data/test/json/koniq.json
-  test_image_path: /data/pxg1/data/test/koniq10k
+  test_json_path: /data/pxg1/data/test/json/spaq.json
+  test_image_path: /data/pxg1/data/test/SPAQ/TestImage
   n_px: 224
 
 

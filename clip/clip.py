@@ -127,6 +127,7 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
     with open(model_path, 'rb') as opened_file:
         try:
             # loading JIT archive
+            # 已经把权重载到model里面了
             model = torch.jit.load(opened_file, map_location=device if jit else "cpu").eval()
             state_dict = None
         except RuntimeError:

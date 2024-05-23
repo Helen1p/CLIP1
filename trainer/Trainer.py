@@ -7,6 +7,7 @@ from torch.cuda.amp import autocast, GradScaler
 from torch.utils.tensorboard import SummaryWriter
 from utils.metrics import AverageMeter
 import torch.distributed as dist
+from utils.tools import plot_grad_flow
 
 
 class trainer():
@@ -118,7 +119,7 @@ class trainer():
                 #     logits_per_image, logits_per_text=self.model(image, text, prior)
                     # logits_per_image, logits_per_text=self.model(image, text)
                 
-                image_features=self.model.module.encode_image(image) # [bs, 512]
+                image_features, i_ =self.model.module.encode_image(image) # [bs, 512]
                 image_features = image_features / image_features.norm(dim=1, keepdim=True)
                 text_features = self.model.module.encode_text(text)
                 text_features = text_features / text_features.norm(dim=1, keepdim=True) # [class_num, 512]
@@ -167,6 +168,7 @@ class trainer():
                 # assert torch.isnan(total_loss).sum() == 0, print(total_loss)
 
                 total_loss.backward()
+                plot_grad_flow(self.model.named_parameters())
                 # for name, para in self.model.named_parameters():
                 #         if torch.isnan(para).sum()!=0:
                 #             print(name,' is nan')
@@ -200,7 +202,7 @@ class trainer():
                 pbar.set_postfix({'Epoch': epoch,
                                 'loss': self.train_loss.avg})
             self.writer.add_scalar('loss', self.train_loss.avg, epoch)
-            if self.local_rank==0 and (((epoch+1) %10==0 and epoch <40) or ((epoch+1) %5==0 and epoch >=40)):
+            if self.local_rank==0:
                 self.save_ckpt(epoch, save_best=False)
             # if epoch==1:
             #     for name, para in self.model.named_parameters():

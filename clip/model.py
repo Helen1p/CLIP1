@@ -6,6 +6,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.cuda.amp import autocast, GradScaler
+import sys
+sys.path.append(r'/data/pxg1/CLIP1/')
+from utils.tools import load_config
+
 
 def get_optim_params(model_name: str):
     if model_name in ['ViT-B/32', 'ViT-B/16']:
@@ -298,6 +302,54 @@ class Transformer(nn.Module):
         return self.resblocks(x)
 
 
+# class VisionTransformer(nn.Module):
+#     def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
+#         super().__init__()
+#         self.input_resolution = input_resolution
+#         self.output_dim = output_dim
+#         self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False)
+
+#         scale = width ** -0.5
+#         self.class_embedding = nn.Parameter(scale * torch.randn(width))
+#         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
+#         self.ln_pre = LayerNorm(width)
+
+#         self.transformer = Transformer(width, layers, heads)
+
+#         self.ln_post = LayerNorm(width)
+#         self.proj = nn.Parameter(scale * torch.randn(width, output_dim)) # [1024, 768]
+#         # self.cross_attn = nn.MultiheadAttention(width, heads) no grad?
+
+
+#     def forward(self, x: torch.Tensor, prior: Optional[torch.Tensor] = None):
+#         x = self.conv1(x)  # shape = [*, width, grid, grid]
+#         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
+#         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
+
+#         # if self.training:
+#         #     x = x.permute(1, 0, 2)
+#         #     # prior [32, 256, 1024]
+#         #     prior = prior.permute(1, 0, 2)
+#         #     x = self.cross_attn(x, prior, x)[0]
+#         #     x = x.permute(1, 0, 2)
+
+#         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+#         x = x + self.positional_embedding.to(x.dtype)
+#         x = self.ln_pre(x) # [bs, 257, 1024]
+        
+#         x = x.permute(1, 0, 2)  # NLD -> LND
+#         x = self.transformer(x)
+#         x = x.permute(1, 0, 2)  # LND -> NLD # [bs, 257, 1024]
+
+#         x = self.ln_post(x[:, 0, :]) # [bs, 1024]
+
+#         if self.proj is not None:
+#             x = x @ self.proj
+
+#         return x
+
+
+
 class VisionTransformer(nn.Module):
     def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
         super().__init__()
@@ -318,16 +370,9 @@ class VisionTransformer(nn.Module):
 
 
     def forward(self, x: torch.Tensor, prior: Optional[torch.Tensor] = None):
-        x = self.conv1(x)  # shape = [*, width, grid, grid]
+        x = self.conv1(x)  # shape = [*, width, grid, grid]  grid=16, patch_size=14
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
-
-        # if self.training:
-        #     x = x.permute(1, 0, 2)
-        #     # prior [32, 256, 1024]
-        #     prior = prior.permute(1, 0, 2)
-        #     x = self.cross_attn(x, prior, x)[0]
-        #     x = x.permute(1, 0, 2)
 
         x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
         x = x + self.positional_embedding.to(x.dtype)
@@ -337,12 +382,14 @@ class VisionTransformer(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD # [bs, 257, 1024]
 
+        x1 = self.ln_post(x[:, 1:, :]) # [bs, 256, 1024]
         x = self.ln_post(x[:, 0, :]) # [bs, 1024]
 
         if self.proj is not None:
             x = x @ self.proj
-
-        return x
+            x1 = x1 @ self.proj
+            
+        return x, x1
 
 
 # segment anything + RoPE prior
@@ -497,6 +544,7 @@ class CustomCLIP(nn.Module):
         else:
             x = x + (self.positional_embedding.to(x.device) * self.mask1.to(x.device)).type(self.dtype).to(x.device) + \
             (self.positional_embedding_res.to(x.device) * self.mask2.to(x.device)).type(self.dtype).to(x.device) 
+        # x = x + self.positional_embedding.type(self.dtype)
         # x [bs, 77, 512]
         x = x.permute(1, 0, 2)  # NLD -> LND
         x = self.transformer(x)
@@ -514,7 +562,7 @@ class CustomCLIP(nn.Module):
         # if self.training and prior is not None:
         #     image = self.prior_fusion(image, prior)
 
-        image_features = self.encode_image(image, prior=prior) # [bs, 768]
+        image_features, i_ = self.encode_image(image, prior=prior) # [bs, 768], [bs, 256, 768]
         text_features = self.encode_text(text) # [bs, 768]
         
         # esemble
@@ -561,6 +609,8 @@ def convert_weights(model: nn.Module):
 
 
 def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip=True, name: Optional[str] = None):
+    # config=load_config(r'/data/pxg1/CLIP1/config/model.yaml')
+
     vit = "visual.proj" in state_dict
 
     if vit:
@@ -632,7 +682,6 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
 
     elif mode=='test':
         model.load_state_dict(state_dict, strict=False)
-        # print(model)
 
     return model.eval()
 

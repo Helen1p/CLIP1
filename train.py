@@ -10,6 +10,7 @@ from trainer import Trainer
 import yaml
 import sys
 from testing.score_clipiqa import zero_shot_eval
+from utils.tools import load_config
 from utils.metrics import srocc, plcc
 from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
@@ -22,12 +23,6 @@ torch.cuda.manual_seed_all(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
-
-def load_config(path):
-    path=str(path)
-    with open(path, 'r', encoding='utf-8') as f:
-        config=yaml.safe_load(f)
-    return config
 
 def main(args):
     config=load_config(args.config_path)
@@ -51,14 +46,11 @@ def main(args):
         config['dataset']['n_px'], context_length, config['dataset']['train_prior_path'])
         train_sampler=DistributedSampler(train_dataset)
 
-        # valid_dataset=image_title_dataset(config['dataset']['valid_input_filename'], config['dataset']['n_px'])
         train_loader=DataLoader(train_dataset, config['train']['batch_size'], shuffle=(train_sampler is None), num_workers=16, sampler=train_sampler)
-        # valid_loader=DataLoader(valid_dataset, config['train']['batch_size'])
 
         # TODO: change to DDP
         # device = "cuda:0" if torch.cuda.is_available() else "cpu" 
         device = torch.device("cuda", local_rank)
-
         
         # 1.original CLIP
         # must set jit=False for training
@@ -118,7 +110,6 @@ def main(args):
         # 2.test on our checkpoint
         ckpt_path = config['test']['ckpt']
         checkpoint=torch.load(ckpt_path, map_location=device)
-        # model=build_model(checkpoint, mode=args.mode, frozen_layers=frozen_layers, load_from_clip=True).to(device)
         model=build_model(checkpoint['state_dict'], mode=args.mode, frozen_layers=frozen_layers, 
         load_from_clip=args.load_from_clip).to(device)
         # q bench/clip iqa, q align
@@ -128,18 +119,12 @@ def main(args):
         srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list1, target_list)
         print('srocc: ', srocc_, ' plcc: ', plcc_)
 
-        # save visual encoder features of different layers
-        # pred_list, target_list, feature = zero_shot_eval(model=model, data_loader=test_loader, device=device)
-        # np.savez('/data/pxg1/CLIP1/npz_data/arrays_ai.npz', l23=feature[23], l22=feature[22], 
-        #         l21=feature[21], l20=feature[20], l19=feature[19])
-        # np.savez('/data/pxg1/CLIP1/npz_data/arrays_wild.npz', l23=feature[23], l22=feature[22], 
-        #         l21=feature[21], l20=feature[20], l19=feature[19])
-
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type=str, default='/data/pxg1/CLIP1/config/train.yaml',
                         help='Config path of models')
+                        # train from scratch写的有问题
     parser.add_argument('--mode', type=str, default='fine_tune',
                         help='train or test or fine_tune')
     parser.add_argument('--frozen_layers', type=bool, default=False,
@@ -154,9 +139,8 @@ if __name__=='__main__':
 
     main(args)
 
-
+    # 2卡跑出来最好
     # train/fine_tune: torchrun --nnodes 1 --nproc_per_node 2 train.py
-
 
 
     # test: python train.py

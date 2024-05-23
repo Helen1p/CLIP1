@@ -73,8 +73,6 @@ def zero_shot_eval(model, data_loader, device):
                 # 1.clip-iqa
                 logits_per_image, logits_per_text = model(image, tokenized_prompts[i].to(device))
 
-                # logits_per_image, logits_per_text, feature = model(image, tokenized_prompts[i].to(device))
-                # fe=[i.detach().cpu().numpy() for i in feature]
                 
                 # 2.open-clip
                 # image_features=model.encode_image(image) # [bs, 512]
@@ -101,4 +99,5 @@ def zero_shot_eval(model, data_loader, device):
             print('******************',idx,' end******************')
         pred_list=torch.cat(pred_score, dim=0).T.detach().cpu().tolist() #[all, n]->[n, all]->[[all个],..n个..,[]]
     return pred_list, target_list
-    # return pred_list, target_list, fe
+
+# 64行改成77，--load_from_clip=True
