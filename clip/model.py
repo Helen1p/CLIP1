@@ -417,6 +417,20 @@ class ensemble_fusion(nn.Module):
         return all
 
 
+class Adapter(nn.Module):
+    def __init__(self, c_in, reduction=4):
+        super(Adapter, self).__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(c_in, c_in // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(c_in // reduction, c_in, bias=False),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        x = self.fc(x)
+        return x
+
 class CustomCLIP(nn.Module):
     def __init__(self,
                  embed_dim: int,
@@ -446,6 +460,8 @@ class CustomCLIP(nn.Module):
         self.mask1[:20, :] = 1
         self.mask2 = torch.zeros([248, 1])
         self.mask2[20:, :] = 1
+        self.adapter_image = Adapter(embed_dim, 4)
+        self.adapter_text = Adapter(embed_dim, 4)
         
         if isinstance(vision_layers, (tuple, list)):
             vision_heads = vision_width * 32 // 64
@@ -564,7 +580,16 @@ class CustomCLIP(nn.Module):
 
         image_features, i_ = self.encode_image(image, prior=prior) # [bs, 768], [bs, 256, 768]
         text_features = self.encode_text(text) # [bs, 768]
-        
+
+        # adapter
+        x = self.adapter_image(image_features)
+        ratio = 0.2
+        image_features = ratio * x + (1 - ratio) * image_features
+
+        x = self.adapter_text(text_features)
+        ratio = 0.2
+        text_features = ratio * x + (1 - ratio) * text_features
+
         # esemble
         # if self.training and prior is not None:
         #     text1 = self.encode_text(prior)
@@ -650,11 +675,12 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
     # fine tune ？原始的ViT-B-32.pt没有optimizer参数
     if mode=='fine_tune':
         model.load_state_dict(state_dict, strict=False)
-        if frozen_layers:
-            optim_params = get_optim_params(name)
-            for names, param in model.named_parameters():
-                if names not in optim_params:
-                    param.requires_grad = False
+        # if frozen_layers:
+        #     optim_params = get_optim_params(name)
+        #     for names, param in model.named_parameters():
+        #         if names not in optim_params:
+        #             param.requires_grad = False
+
         if not load_from_clip:
             positional_embedding_pre = model.positional_embedding.type(model.dtype)
             length, dim = positional_embedding_pre.shape
@@ -679,6 +705,9 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
             # model.positional_embedding = nn.Parameter(posisitonal_embedding_new, requires_grad=True)
             model.positional_embedding_res = nn.Parameter(positional_embedding_res, requires_grad=True)
             model.context_length=248
+        for name, param in model.named_parameters():
+            if 'adapter' not in name and 'logit_scale' not in name:
+                param.requires_grad_(False)
 
     elif mode=='test':
         model.load_state_dict(state_dict, strict=False)

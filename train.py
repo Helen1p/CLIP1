@@ -140,10 +140,10 @@ if __name__=='__main__':
     main(args)
 
     # 2卡跑出来最好
-    # train/fine_tune: torchrun --nnodes 1 --nproc_per_node 2 train.py
+    # train/fine_tune: CUDA_VISIBLE_DEVICE=??? torchrun --nnodes 1 --nproc_per_node 2 train.py
 
 
-    # test: python train.py
+    # test: CUDA_VISIBLE_DEVICE=??? python train.py --mode test
 
 
     # local rank, clip forward, label在哪个device上

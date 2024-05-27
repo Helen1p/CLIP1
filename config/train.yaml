@@ -1,6 +1,6 @@
 train:
-  epoch: 5
-  batch_size: 8
+  epoch: 20
+  batch_size: 64
   # fine tune all 16 ; frozen layer 32
   ckpt_save_path: /data2/pxg1/data/checkpoint/
   ckpt: None
@@ -10,7 +10,7 @@ train:
 
 optimizer:
   name: Adam
-  lr: 1e-5
+  lr: 1e-4
   betas: (0.9,0.98)
   eps: 1e-6
   weight_decay: 0.2
@@ -22,7 +22,7 @@ lr_scheduler:
 
 test:
   batch_size: 256
-  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch1.pth
+  ckpt: /data2/pxg1/data/checkpoint/checkpoint_epoch18.pth
 
 
 dataset:
@@ -31,8 +31,8 @@ dataset:
   train_image_path: /data/pxg1/data/q-instruct-images
   train_prior_path: /data/pxg1/data/q-instruct-images-dinov2
   valid_input_filename: None
-  test_json_path: /data/pxg1/data/test/json/spaq.json
-  test_image_path: /data/pxg1/data/test/SPAQ/TestImage
+  test_json_path: /data/pxg1/data/test/json/flive.json
+  test_image_path: /data/pxg1/data/test/flive
   n_px: 224
 
 

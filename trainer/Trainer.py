@@ -120,8 +120,19 @@ class trainer():
                     # logits_per_image, logits_per_text=self.model(image, text)
                 
                 image_features, i_ =self.model.module.encode_image(image) # [bs, 512]
+                # print(image_features.shape)
+
+                x = self.model.module.adapter_image(image_features)
+                ratio = 0.2
+                image_features = ratio * x + (1 - ratio) * image_features
+
                 image_features = image_features / image_features.norm(dim=1, keepdim=True)
                 text_features = self.model.module.encode_text(text)
+
+                x = self.model.module.adapter_text(text_features)
+                ratio = 0.2
+                text_features = ratio * x + (1 - ratio) * text_features
+
                 text_features = text_features / text_features.norm(dim=1, keepdim=True) # [class_num, 512]
                 logit_scale = self.model.module.logit_scale.exp() 
 
@@ -168,7 +179,8 @@ class trainer():
                 # assert torch.isnan(total_loss).sum() == 0, print(total_loss)
 
                 total_loss.backward()
-                plot_grad_flow(self.model.named_parameters())
+                # plot_grad_flow(self.model.named_parameters())
+
                 # for name, para in self.model.named_parameters():
                 #         if torch.isnan(para).sum()!=0:
                 #             print(name,' is nan')
