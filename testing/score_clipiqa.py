@@ -71,7 +71,7 @@ def zero_shot_eval(model, data_loader, device):
             logits_list = []
             for i in range(len(CLASSNAMES)):
                 # 1.clip-iqa
-                logits_per_image, logits_per_text = model(image, tokenized_prompts[i].to(device))
+                logits_per_image, logits_per_text, logits_new = model(image, tokenized_prompts[i].to(device))
 
                 
                 # 2.open-clip
@@ -82,11 +82,19 @@ def zero_shot_eval(model, data_loader, device):
                 # class_embeddings = class_embeddings.T # [512, class_num]
                 # logits_per_image = 100. * image_features @ class_embeddings # [bs, class_num]
 
-                logits = logits_per_image.softmax(dim=-1) # [bs, class_num]
+
+                logits=(0.9 * logits_per_image+0.5 * logits_new).softmax(dim=-1)
+                # logits = logits_per_image.softmax(dim=-1) # [bs, class_num]
+                # logits_new = logits_new.softmax(dim=-1) # [bs, class_num]
+
                 score_rank=torch.Tensor([1, 0]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
                 # score_rank=torch.Tensor([1, 0.75, 0.5, 0.25, 0.]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
                 # score_rank=torch.Tensor([1, 0.8, 0.6, 0.4, 0.1]).unsqueeze(dim=0).T.to(torch.float16).to(device) # [class_num, 1]
+
                 pred = logits @ score_rank # [bs, 1]
+                # pred = logits_new @ score_rank # [bs, 1]
+                # pred = 0.9 * logits @ score_rank + 0.1 * logits_new @ score_rank # [bs, 1]
+
                 # logits_list.append(logits[:, 0].unsqueeze(1)) # [bs, 1]
                 logits_list.append(pred)
             logits_list = torch.cat(logits_list, dim=1).float() #[bs, n], n组prompt

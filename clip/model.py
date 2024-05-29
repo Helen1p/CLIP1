@@ -6,74 +6,56 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.cuda.amp import autocast, GradScaler
+import re
+
 import sys
 sys.path.append(r'/data/pxg1/CLIP1/')
 from utils.tools import load_config
 
 
-def get_optim_params(model_name: str):
+def get_optim_params(model_name: str, layer_visual: int, layer_text):
+    vit_visual_end=['.attn.in_proj_weight', 
+             '.attn.in_proj_bias', 
+             '.attn.out_proj.weight', 
+             '.attn.out_proj.bias', 
+             '.ln_1.weight', 
+             '.ln_1.bias', 
+             '.mlp.c_fc.weight', 
+             '.mlp.c_fc.bias', 
+             '.mlp.c_proj.weight', 
+             '.mlp.c_proj.bias', 
+             '.ln_2.weight', 
+             '.ln_2.bias']
+    vit_text_end=['.attn.in_proj_weight', 
+                  '.attn.in_proj_bias', 
+                  '.attn.out_proj.weight', 
+                  '.attn.out_proj.bias', 
+                  '.ln_1.weight', 
+                  '.ln_1.bias', 
+                  '.mlp.c_fc.weight', 
+                  '.mlp.c_fc.bias', 
+                  '.mlp.c_proj.weight', 
+                  '.mlp.c_proj.bias', 
+                  '.ln_2.weight', 
+                  '.ln_2.bias']
     if model_name in ['ViT-B/32', 'ViT-B/16']:
-        return ['visual.transformer.resblocks.11.attn.in_proj_weight',
-                'visual.transformer.resblocks.11.attn.in_proj_bias',
-                'visual.transformer.resblocks.11.attn.out_proj.weight',
-                'visual.transformer.resblocks.11.attn.out_proj.bias',
-                'visual.transformer.resblocks.11.ln_1.weight',
-                'visual.transformer.resblocks.11.ln_1.bias',
-                'visual.transformer.resblocks.11.mlp.c_fc.weight',
-                'visual.transformer.resblocks.11.mlp.c_fc.bias',
-                'visual.transformer.resblocks.11.mlp.c_proj.weight',
-                'visual.transformer.resblocks.11.mlp.c_proj.bias',
-                'visual.transformer.resblocks.11.ln_2.weight',
-                'visual.transformer.resblocks.11.ln_2.bias',
-                'visual.ln_post.weight',
-                'visual.ln_post.bias',
-                'visual.proj',
-                'transformer.resblocks.11.attn.in_proj_weight',
-                'transformer.resblocks.11.attn.in_proj_bias',
-                'transformer.resblocks.11.attn.out_proj.weight',
-                'transformer.resblocks.11.attn.out_proj.bias',
-                'transformer.resblocks.11.ln_1.weight',
-                'transformer.resblocks.11.ln_1.bias',
-                'transformer.resblocks.11.mlp.c_fc.weight',
-                'transformer.resblocks.11.mlp.c_fc.bias',
-                'transformer.resblocks.11.mlp.c_proj.weight',
-                'transformer.resblocks.11.mlp.c_proj.bias',
-                'transformer.resblocks.11.ln_2.weight',
-                'transformer.resblocks.11.ln_2.bias',
-                'ln_final.weight',
-                'ln_final.bias',
-                'text_projection']
+        name=['visual.ln_post.weight', 'visual.ln_post.bias', 'visual.proj', 'ln_final.weight', 'ln_final.bias', 'text_projection']
+        for l in range(layer_visual):
+            for i in vit_visual_end:
+                name.append('visual.transformer.resblocks.'+str(11-l)+i)
+        for l in range(layer_text):
+            for j in vit_text_end:
+                name.append('transformer.resblocks.'+str(11-l)+j)
+        return name
     elif model_name in ['ViT-L/14', 'ViT-L/14@336px']:
-        return ['visual.transformer.resblocks.23.attn.in_proj_weight',
-                'visual.transformer.resblocks.23.attn.in_proj_bias',
-                'visual.transformer.resblocks.23.attn.out_proj.weight',
-                'visual.transformer.resblocks.23.attn.out_proj.bias',
-                'visual.transformer.resblocks.23.ln_1.weight',
-                'visual.transformer.resblocks.23.ln_1.bias',
-                'visual.transformer.resblocks.23.mlp.c_fc.weight',
-                'visual.transformer.resblocks.23.mlp.c_fc.bias',
-                'visual.transformer.resblocks.23.mlp.c_proj.weight',
-                'visual.transformer.resblocks.23.mlp.c_proj.bias',
-                'visual.transformer.resblocks.23.ln_2.weight',
-                'visual.transformer.resblocks.23.ln_2.bias',
-                'visual.ln_post.weight',
-                'visual.ln_post.bias',
-                'visual.proj',
-                'transformer.resblocks.11.attn.in_proj_weight',
-                'transformer.resblocks.11.attn.in_proj_bias',
-                'transformer.resblocks.11.attn.out_proj.weight',
-                'transformer.resblocks.11.attn.out_proj.bias',
-                'transformer.resblocks.11.ln_1.weight',
-                'transformer.resblocks.11.ln_1.bias',
-                'transformer.resblocks.11.mlp.c_fc.weight',
-                'transformer.resblocks.11.mlp.c_fc.bias',
-                'transformer.resblocks.11.mlp.c_proj.weight',
-                'transformer.resblocks.11.mlp.c_proj.bias',
-                'transformer.resblocks.11.ln_2.weight',
-                'transformer.resblocks.11.ln_2.bias',
-                'ln_final.weight',
-                'ln_final.bias',
-                'text_projection']
+        name=['visual.ln_post.weight', 'visual.ln_post.bias', 'visual.proj', 'ln_final.weight', 'ln_final.bias', 'text_projection']
+        for l in range(layer_visual):
+            for i in vit_visual_end:
+                name.append('visual.transformer.resblocks.'+str(23-l)+i)
+        for l in range(layer_text):
+            for j in vit_text_end:
+                name.append('transformer.resblocks.'+str(11-l)+j)
+        return name
     elif model_name in ['RN50']:
         return ['visual.layer4.2.conv1.weight',
                 'visual.layer4.2.bn1.weight',
@@ -460,8 +442,8 @@ class CustomCLIP(nn.Module):
         self.mask1[:20, :] = 1
         self.mask2 = torch.zeros([248, 1])
         self.mask2[20:, :] = 1
-        self.adapter_image = Adapter(embed_dim, 4)
-        self.adapter_text = Adapter(embed_dim, 4)
+        # self.adapter_image = Adapter(embed_dim, 4)
+        # self.adapter_text = Adapter(embed_dim, 4)
         
         if isinstance(vision_layers, (tuple, list)):
             vision_heads = vision_width * 32 // 64
@@ -582,13 +564,13 @@ class CustomCLIP(nn.Module):
         text_features = self.encode_text(text) # [bs, 768]
 
         # adapter
-        x = self.adapter_image(image_features)
-        ratio = 0.2
-        image_features = ratio * x + (1 - ratio) * image_features
+        # x = self.adapter_image(image_features)
+        # ratio = 0.2
+        # image_features = ratio * x + (1 - ratio) * image_features
 
-        x = self.adapter_text(text_features)
-        ratio = 0.2
-        text_features = ratio * x + (1 - ratio) * text_features
+        # x = self.adapter_text(text_features)
+        # ratio = 0.2
+        # text_features = ratio * x + (1 - ratio) * text_features
 
         # esemble
         # if self.training and prior is not None:
@@ -599,14 +581,19 @@ class CustomCLIP(nn.Module):
         # normalized features
         image_features = image_features / image_features.norm(dim=1, keepdim=True) # [bs, 768]
         text_features = text_features / text_features.norm(dim=1, keepdim=True) # [bs, 768]
+        i_ = i_ / i_.norm(dim=2, keepdim=True) # [bs, 256, 768]
+
 
         # cosine similarity as logits
         logit_scale = self.logit_scale.exp()
         logits_per_image = logit_scale * image_features @ text_features.t()
         logits_per_text = logits_per_image.t()
 
+        logits_new = self.logit_scale.exp() * i_ @ text_features.t() # [bs, 256, bs_text]
+        logits_new = torch.mean(logits_new, dim=1) # [bs, bs_text]
+
         # shape = [global_batch_size, global_batch_size]
-        return logits_per_image, logits_per_text
+        return logits_per_image, logits_per_text, logits_new
 
 
 def convert_weights(model: nn.Module):
@@ -675,11 +662,11 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
     # fine tune ？原始的ViT-B-32.pt没有optimizer参数
     if mode=='fine_tune':
         model.load_state_dict(state_dict, strict=False)
-        # if frozen_layers:
-        #     optim_params = get_optim_params(name)
-        #     for names, param in model.named_parameters():
-        #         if names not in optim_params:
-        #             param.requires_grad = False
+        if frozen_layers:
+            optim_params = get_optim_params(name, layer_visual=2, layer_text=2)
+            for names, param in model.named_parameters():
+                if names not in optim_params:
+                    param.requires_grad = False
 
         if not load_from_clip:
             positional_embedding_pre = model.positional_embedding.type(model.dtype)
@@ -705,9 +692,9 @@ def build_model(state_dict: dict, mode: str, frozen_layers: bool, load_from_clip
             # model.positional_embedding = nn.Parameter(posisitonal_embedding_new, requires_grad=True)
             model.positional_embedding_res = nn.Parameter(positional_embedding_res, requires_grad=True)
             model.context_length=248
-        for name, param in model.named_parameters():
-            if 'adapter' not in name and 'logit_scale' not in name:
-                param.requires_grad_(False)
+        # for name, param in model.named_parameters():
+            # if 'adapter' not in name and 'logit_scale' not in name:
+            #     param.requires_grad_(False)
 
     elif mode=='test':
         model.load_state_dict(state_dict, strict=False)

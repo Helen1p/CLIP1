@@ -26,6 +26,8 @@ class trainer():
         self.ckpt=ckpt
         self.loss_image=nn.CrossEntropyLoss()
         self.loss_text=nn.CrossEntropyLoss()
+        self.loss_new_image=nn.CrossEntropyLoss()
+        self.loss_new_text=nn.CrossEntropyLoss()
         if self.ckpt is not None:
             self.load_ckpt(self.ckpt)
         # ？dir写错了
@@ -122,16 +124,18 @@ class trainer():
                 image_features, i_ =self.model.module.encode_image(image) # [bs, 512]
                 # print(image_features.shape)
 
-                x = self.model.module.adapter_image(image_features)
-                ratio = 0.2
-                image_features = ratio * x + (1 - ratio) * image_features
+                # x = self.model.module.adapter_image(image_features)
+                # ratio = 0.2
+                # image_features = ratio * x + (1 - ratio) * image_features
+
+                i_ = i_ / i_.norm(dim=2, keepdim=True) # [bs, 256, 768]
 
                 image_features = image_features / image_features.norm(dim=1, keepdim=True)
                 text_features = self.model.module.encode_text(text)
 
-                x = self.model.module.adapter_text(text_features)
-                ratio = 0.2
-                text_features = ratio * x + (1 - ratio) * text_features
+                # x = self.model.module.adapter_text(text_features)
+                # ratio = 0.2
+                # text_features = ratio * x + (1 - ratio) * text_features
 
                 text_features = text_features / text_features.norm(dim=1, keepdim=True) # [class_num, 512]
                 logit_scale = self.model.module.logit_scale.exp() 
@@ -144,8 +148,10 @@ class trainer():
                 else:
                     gathered_image_features = [torch.zeros_like(image_features) for _ in range(dist.get_world_size())]
                     gathered_text_features = [torch.zeros_like(text_features) for _ in range(dist.get_world_size())]
+                    gathered_i_ = [torch.zeros_like(i_) for _ in range(dist.get_world_size())]
                     dist.all_gather(gathered_image_features, image_features)
                     dist.all_gather(gathered_text_features, text_features)
+                    dist.all_gather(gathered_i_, i_)
                     # print(gathered_image_features)
                     if not self.local_loss:
                         # ensure grads for local rank when all_* features don't have a gradient
@@ -154,6 +160,7 @@ class trainer():
                     # print(gathered_image_features)
                     all_image_features = torch.cat(gathered_image_features, dim=0)
                     all_text_features = torch.cat(gathered_text_features, dim=0)
+                    all_i_ = torch.cat(gathered_i_, dim=0)
 
                 if self.local_loss:
                     logits_per_image = logit_scale * image_features @ all_text_features.T
@@ -161,6 +168,9 @@ class trainer():
                 else:
                     logits_per_image = logit_scale * all_image_features @ all_text_features.t() # [bs, class_num]
                     logits_per_text = logits_per_image.t()
+                    logits_new = logit_scale * all_i_ @ all_text_features.t() # [bs, 256, bs]
+                    logits_new = torch.mean(logits_new, dim=1) # [bs, bs]
+                    # print(logits_new.shape)
 
                 device=image_features.device
                 labels = torch.arange(logits_per_image.shape[0], device=device, dtype=torch.long)
@@ -168,8 +178,9 @@ class trainer():
                     labels = labels + logits_per_image.shape[0] * self.local_rank
                 n=logits_per_image.shape[0]
 
-
-                total_loss=(self.loss_image(logits_per_image, labels)+self.loss_text(logits_per_text, labels))/2
+                # total_loss=(self.loss_image(logits_per_image, labels)+self.loss_text(logits_per_text, labels))/2
+                total_loss=(self.loss_image(logits_per_image, labels)+self.loss_text(logits_per_text, labels))/2+ \
+                0.1*(self.loss_new_image(logits_new, labels)+self.loss_new_text(logits_new.t(), labels))/2
                 
                 # scaler.scale(total_loss).backward()
                 # scaler.step(self.optimizer)
