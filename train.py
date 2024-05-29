@@ -98,12 +98,7 @@ def main(args):
         train_trainer.train()
     
     elif args.mode == 'test':
-        # zero shot MOS / zero shot attributes classifer
-        test_dataset=test_set(config['dataset']['test_json_path'], config['dataset']['test_image_path'], config['dataset']['n_px'])
-        # len(test_dataset)=2985, len(test_loader)=12
-        test_loader=DataLoader(test_dataset, config['test']['batch_size'], num_workers=16)
         device = "cuda:0" if torch.cuda.is_available() else "cpu" 
-
         # 1.test on OG clip
         # model, _ = clip.load("ViT-B/32", device=device, jit=False, mode=args.mode, frozen_layers=frozen_layers)
 
@@ -112,12 +107,26 @@ def main(args):
         checkpoint=torch.load(ckpt_path, map_location=device)
         model=build_model(checkpoint['state_dict'], mode=args.mode, frozen_layers=frozen_layers, 
         load_from_clip=args.load_from_clip).to(device)
-        # q bench/clip iqa, q align
-        pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
-        pred_list1 = pred_list[0]
-        # #srcc for feature npz generation
-        srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list1, target_list)
-        print('srocc: ', srocc_, ' plcc: ', plcc_)
+
+        # zero shot MOS / zero shot attributes classifer
+        test_json_prefix='/data/pxg1/data/test/json/'
+        test_image_prefix='/data/pxg1/data/test/'
+        json=['kadid.json','agi.json','cgi.json','flive.json','koniq.json','livec.json','spaq.json']
+        image=['kadid10k','AGIQA-3K','CGIQA-6K','flive','koniq10k','livec','SPAQ/TestImage']
+        for j, i in zip(json, image):
+            print('-------------', j, ' start--------------')
+            test_json_path = os.path.join(test_json_prefix, j)
+            test_image_path = os.path.join(test_image_prefix, i)
+            test_dataset=test_set(test_json_path, test_image_path, config['dataset']['n_px'])
+            # test_dataset=test_set(config['dataset']['test_json_path'], config['dataset']['test_image_path'], config['dataset']['n_px'])
+            # len(test_dataset)=2985, len(test_loader)=12
+            test_loader=DataLoader(test_dataset, config['test']['batch_size'], num_workers=16)
+            # q bench/clip iqa, q align
+            pred_list, target_list = zero_shot_eval(model=model, data_loader=test_loader, device=device)
+            pred_list1 = pred_list[0]
+            srocc_, plcc_ = srocc(pred_list1, target_list), plcc(pred_list1, target_list)
+            print('-------------', j, ' result--------------')
+            print('srocc: ', srocc_, ' plcc: ', plcc_)
 
 
 if __name__=='__main__':
@@ -127,7 +136,7 @@ if __name__=='__main__':
                         # train from scratch写的有问题
     parser.add_argument('--mode', type=str, default='fine_tune',
                         help='train or test or fine_tune')
-    parser.add_argument('--frozen_layers', type=bool, default=False,
+    parser.add_argument('--frozen_layers', type=bool, default=True,
                         help='frozen_layers')
     parser.add_argument('--load_from_clip', type=bool, default=False,
                         help='context_length = 77 or 248')
